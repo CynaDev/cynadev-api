@@ -1,0 +1,14 @@
+# config/services.yaml
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+
+    App\State\UserPasswordHasher:
+        bind:
+            $processor: "@api_platform.doctrine.orm.state.persist_processor"

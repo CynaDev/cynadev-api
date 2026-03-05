@@ -17,7 +17,7 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
     paginationClientItemsPerPage: true,
     paginationMaximumItemsPerPage: 50
 )]
-#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact', 'priorite' => 'exact'])]
 class Product
 {
     #[ORM\Id]

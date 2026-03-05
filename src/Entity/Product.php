@@ -7,9 +7,17 @@ use App\Config\Disponibilite_enums;
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    paginationEnabled: true,
+    paginationItemsPerPage: 5,
+    paginationClientItemsPerPage: true,
+    paginationMaximumItemsPerPage: 50
+)]
+#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact'])]
 class Product
 {
     #[ORM\Id]
@@ -33,7 +41,7 @@ class Product
     private ?Disponibilite_enums $disponibilite = null;
 
     #[ORM\Column]
-    private ?int $priorite = null;
+    private bool $priorite = false;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $dateAjout = null;
@@ -103,12 +111,12 @@ class Product
         return $this;
     }
 
-    public function getPriorite(): ?int
+    public function isPriorite(): bool
     {
         return $this->priorite;
     }
 
-    public function setPriorite(int $priorite): static
+    public function setPriorite(bool $priorite): static
     {
         $this->priorite = $priorite;
 
@@ -120,9 +128,9 @@ class Product
         return $this->dateAjout;
     }
 
-    public function setDateAjout(\DateTime $date_ajout): static
+    public function setDateAjout(\DateTime $dateAjout): static
     {
-        $this->dateAjout = $date_ajout;
+        $this->dateAjout = $dateAjout;
 
         return $this;
     }

@@ -17,16 +17,16 @@ class Subscription
     private ?int $id = null;
 
     #[ORM\Column]
-    private ?int $order_id = null;
+    private ?int $orderId = null;
 
     #[ORM\Column]
-    private ?int $product_id = null;
+    private ?int $productId = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTime $date_debut = null;
+    private ?\DateTime $dateDebut = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTime $date_fin = null;
+    private ?\DateTime $dateFin = null;
 
     public function getId(): ?int
     {
@@ -35,48 +35,48 @@ class Subscription
 
     public function getOrderId(): ?int
     {
-        return $this->order_id;
+        return $this->orderId;
     }
 
-    public function setOrderId(int $order_id): static
+    public function setOrderId(int $orderId): static
     {
-        $this->order_id = $order_id;
+        $this->orderId = $orderId;
 
         return $this;
     }
 
     public function getProductId(): ?int
     {
-        return $this->product_id;
+        return $this->productId;
     }
 
-    public function setProductId(int $product_id): static
+    public function setProductId(int $productId): static
     {
-        $this->product_id = $product_id;
+        $this->productId = $productId;
 
         return $this;
     }
 
     public function getDateDebut(): ?\DateTime
     {
-        return $this->date_debut;
+        return $this->dateDebut;
     }
 
     public function setDateDebut(\DateTime $date_debut): static
     {
-        $this->date_debut = $date_debut;
+        $this->dateDebut = $date_debut;
 
         return $this;
     }
 
     public function getDateFin(): ?\DateTime
     {
-        return $this->date_fin;
+        return $this->dateFin;
     }
 
     public function setDateFin(\DateTime $date_fin): static
     {
-        $this->date_fin = $date_fin;
+        $this->dateFin = $date_fin;
 
         return $this;
     }

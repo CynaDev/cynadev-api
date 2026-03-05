@@ -24,7 +24,7 @@ class Product
     private ?string $description = null;
 
     #[ORM\Column]
-    private ?int $category_id = null;
+    private ?int $categoryId = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $price = null;
@@ -36,7 +36,7 @@ class Product
     private ?int $priorite = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTime $date_ajout = null;
+    private ?\DateTime $dateAjout = null;
 
     public function getId(): ?int
     {
@@ -69,12 +69,12 @@ class Product
 
     public function getCategoryId(): ?int
     {
-        return $this->category_id;
+        return $this->categoryId;
     }
 
-    public function setCategoryId(int $category_id): static
+    public function setCategoryId(int $categoryId): static
     {
-        $this->category_id = $category_id;
+        $this->categoryId = $categoryId;
 
         return $this;
     }
@@ -117,12 +117,12 @@ class Product
 
     public function getDateAjout(): ?\DateTime
     {
-        return $this->date_ajout;
+        return $this->dateAjout;
     }
 
     public function setDateAjout(\DateTime $date_ajout): static
     {
-        $this->date_ajout = $date_ajout;
+        $this->dateAjout = $date_ajout;
 
         return $this;
     }

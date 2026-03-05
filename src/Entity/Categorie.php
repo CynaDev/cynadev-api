@@ -22,7 +22,10 @@ class Categorie
     private ?string $description = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $image_url = null;
+    private ?string $imageUrl = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isActive = false;
 
     public function getId(): ?int
     {
@@ -55,12 +58,22 @@ class Categorie
 
     public function getImageUrl(): ?string
     {
-        return $this->image_url;
+        return $this->imageUrl;
     }
 
-    public function setImageUrl(string $image_url): static
+    public function setImageUrl(string $imageUrl): static
     {
-        $this->image_url = $image_url;
+        $this->imageUrl = $imageUrl;
+
+        return $this;
+    }
+
+    public function getIsActive(): bool{
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive){
+        $this->isActive = $isActive;
 
         return $this;
     }

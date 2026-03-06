@@ -9,6 +9,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
@@ -17,7 +20,9 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
     paginationClientItemsPerPage: true,
     paginationMaximumItemsPerPage: 50
 )]
-#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact', 'priorite' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact', 'priorite' => 'exact', 'name' => 'partial', 'description' => 'partial'])]
+#[ApiFilter(RangeFilter::class, properties: ['price'])]
+#[ApiFilter(OrderFilter::class, properties: ['price', 'priorite', 'dateAjout'], arguments: ['orderParameterName' => 'order'])]
 class Product
 {
     #[ORM\Id]
@@ -87,12 +92,12 @@ class Product
         return $this;
     }
 
-    public function getPrice(): ?string
+    public function getPrice(): ?float
     {
         return $this->price;
     }
 
-    public function setPrice(string $price): static
+    public function setPrice(float $price): static
     {
         $this->price = $price;
 

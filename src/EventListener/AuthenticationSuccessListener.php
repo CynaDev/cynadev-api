@@ -3,30 +3,49 @@
 namespace App\EventListener;
 
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 
-#[AsEventListener(event: 'lexik_jwt_authentication.on_authentication_success', method: 'onAuthenticationSuccessResponse')]
 class AuthenticationSuccessListener
 {
-    public function onAuthenticationSuccessResponse(AuthenticationSuccessEvent $event): void
-    {
-        $data = $event->getData();
-        /** @var \App\Entity\User $user */
-        $user = $event->getUser();
+    public function __construct(private int $jwtTtl) {}
+    // public function onAuthenticationSuccessResponse(AuthenticationSuccessEvent $event): void
+    // {
+    //     $data = $event->getData();
+    //     /** @var \App\Entity\User $user */
+    //     $user = $event->getUser();
 
-        if (!$user instanceof UserInterface) {
-            return;
-        }
+    //     if (!$user instanceof UserInterface) {
+    //         return;
+    //     }
 
-        $data['user'] = [
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
-            'firstname' => $user->getFirstname(),
-            'lastname' => $user->getLastname(),
-        ];
+    //     $data['user'] = [
+    //         'id' => $user->getId(),
+    //         'email' => $user->getEmail(),
+    //         'roles' => $user->getRoles(),
+    //         'firstname' => $user->getFirstname(),
+    //         'lastname' => $user->getLastname(),
+    //     ];
 
-        $event->setData($data);
-    }
+    //     $event->setData($data);
+    // }
+
+     public function onAuthenticationSuccess(AuthenticationSuccessEvent $event): void
+      {
+          $data = $event->getData();
+          $token = $data['token'];
+
+          $cookie = Cookie::create('authToken')
+              ->withValue($token)
+              ->withExpires(time() + $this->jwtTtl)
+              ->withPath('/')
+              ->withSecure(false) // Set to true in production with HTTPS       
+              ->withHttpOnly(true)     
+              ->withSameSite('strict');
+
+          $response = $event->getResponse();
+          $response->headers->setCookie($cookie);
+
+          unset($data['token']);
+          $event->setData($data);
+      }
 }

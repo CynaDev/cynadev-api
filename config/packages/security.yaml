@@ -46,6 +46,7 @@ security:
       - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
       - { path: ^/api/products, roles: PUBLIC_ACCESS }
       - { path: ^/api/categories, roles: PUBLIC_ACCESS }
+      - { path: ^/api/contacts, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

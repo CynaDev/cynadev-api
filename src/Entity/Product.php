@@ -59,8 +59,8 @@ class Product
     #[ORM\Column(enumType: Disponibilite_enums::class)]
     private ?Disponibilite_enums $disponibilite = null;
 
-    #[ORM\Column]
-    private bool $priorite = false;
+    #[ORM\Column(nullable: true)]
+    private ?int $priorite = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $dateAjout = null;
@@ -130,17 +130,17 @@ class Product
         return $this;
     }
 
-    public function isPriorite(): bool
+    public function getPriorite(): ?int
     {
         return $this->priorite;
     }
 
-    public function setPriorite(bool $priorite): static
+    public function setPriorite(?int $priorite): static
     {
         $this->priorite = $priorite;
-
         return $this;
     }
+
 
     public function getDateAjout(): ?\DateTime
     {

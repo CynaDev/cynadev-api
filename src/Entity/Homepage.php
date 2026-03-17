@@ -62,6 +62,9 @@ class Homepage
     private ?string $bannercta = null;
 
     #[ORM\Column(length: 255)]
+    private ?string $bannerctalink = null;
+
+    #[ORM\Column(length: 255)]
     private ?string $pubtitle = null;
 
     #[ORM\Column(length: 255)]
@@ -162,6 +165,16 @@ class Homepage
     public function setBannercentral(string $bannercentral): static
     {
         $this->bannercentral = $bannercentral;
+        return $this;
+    }
+
+    public function getBannerctalink(): ?string
+    {
+        return $this->bannerctalink;
+    }
+    public function setBannerctalink(string $bannerctalink): static
+    {
+        $this->bannerctalink = $bannerctalink;
         return $this;
     }
 

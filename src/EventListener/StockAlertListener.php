@@ -10,7 +10,6 @@ use Doctrine\ORM\Events;
 #[AsEntityListener(event: Events::preUpdate, method: 'preUpdate', entity: Stock::class)]
 class StockAlertListener
 {
-    // On injecte ton EmailService ici
     public function __construct(
         private readonly EmailService $emailService 
     ) {}
@@ -29,7 +28,6 @@ class StockAlertListener
         if ($nouvelleQuantite <= 0 && $ancienneQuantite > 0) {
             $produit = $stock->getProduct();
             
-            // On appelle ton EmailService tout simplement !
             if ($produit) {
                 $this->emailService->sendStockAlertEmail($produit);
             }

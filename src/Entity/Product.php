@@ -11,6 +11,8 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Config\Disponibilite_enums;
 use App\Repository\ProductRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiFilter;
@@ -59,8 +61,8 @@ class Product
     #[ORM\Column(enumType: Disponibilite_enums::class)]
     private ?Disponibilite_enums $disponibilite = null;
 
-    #[ORM\Column]
-    private bool $priorite = false;
+    #[ORM\Column(nullable: true)]
+    private ?int $priorite = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $dateAjout = null;
@@ -130,17 +132,17 @@ class Product
         return $this;
     }
 
-    public function isPriorite(): bool
+    public function getPriorite(): ?int
     {
         return $this->priorite;
     }
 
-    public function setPriorite(bool $priorite): static
+    public function setPriorite(?int $priorite): static
     {
         $this->priorite = $priorite;
-
         return $this;
     }
+
 
     public function getDateAjout(): ?\DateTime
     {

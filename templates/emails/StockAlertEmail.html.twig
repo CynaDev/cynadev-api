@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <tr>
+                        <td style="padding: 40px 30px; text-align: center; background-color: #ef4444;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">⚠️ Alerte Stock</h1>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="color: #333333; margin: 0 0 20px 0;">Rupture de stock détectée</h2>
+                            
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px 0;">
+                                Bonjour,
+                            </p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px 0;">
+                                Le système vient de détecter que le stock est tombé à <strong>zéro</strong> pour l'un de vos produits. La disponibilité a été automatiquement mise à jour si vous avez activé cette option.
+                            </p>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #ef4444; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; color: #333333; font-size: 14px;">
+                                            <strong>ID du Produit :</strong> #{{ product.id }}
+                                        </p>
+                                        <p style="margin: 0; color: #333333; font-size: 14px;">
+                                            <strong>Nom du Produit :</strong> <span style="color: #4f39f6; font-weight: bold;">{{ product.name }}</span>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="http://145.223.33.7/admin/stocks" 
+                                   style="display: inline-block; background-color: #4f39f6; color: #ffffff; 
+                                          padding: 14px 40px; text-decoration: none; border-radius: 5px; 
+                                          font-weight: bold; font-size: 16px;">
+                                    Gérer les stocks
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 20px 30px; text-align: center; background-color: #343a40;">
+                            <p style="color: #ffffff; font-size: 12px; margin: 0;">
+                                Cet email a été généré automatiquement par le panel d'administration Cynadev.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

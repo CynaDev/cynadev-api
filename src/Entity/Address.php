@@ -39,9 +39,21 @@ class Address
         return $this->id;
     }
 
-    public function getIdUser(): ?User
+    public function getUser(): ?User
     {
         return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    public function getIdUser(): ?User
+    {
+        return $this->getUser();
     }
 
     public function setIdUser(User $id_user): static

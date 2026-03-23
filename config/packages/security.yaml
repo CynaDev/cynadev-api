@@ -12,7 +12,7 @@ security:
 
     firewalls:
         login:
-            pattern: ^/api/login
+            pattern: ^/api/login_check
             stateless: true
             user_checker: App\Security\UserChecker
             json_login:

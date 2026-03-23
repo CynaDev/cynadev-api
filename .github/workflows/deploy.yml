@@ -31,7 +31,7 @@ jobs:
             # 3. Setup du .env
             echo "$PROD_ENV_CONTENT" > .env
 
-            # 4. Installation des dépendances (SANS le dossier vendor supprimé, c'est plus rapide)
+            # 4. Installation des dépendances
             export APP_ENV=prod
             composer install --no-dev --optimize-autoloader --no-interaction
 
@@ -43,6 +43,6 @@ jobs:
             php bin/console cache:warmup --env=prod
 
             # 6. RÉPARATION DES DROITS (C'est ça qui manque !)
-            # On s'assure que www-data peut écrire dans var/ et public/uploads
-            sudo chown -R devuser:www-data var public/uploads
-            sudo chmod -R 775 var public/uploads
+            # On s'assure que www-data peut écrire dans var/ et public/
+            sudo chown -R devuser:www-data var public/
+            sudo chmod -R 775 var public/

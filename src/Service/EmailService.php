@@ -35,7 +35,7 @@ class EmailService
 
         $verificationUrl = sprintf(
             '%s/verify-email?token=%s',
-            rtrim('localhost:5173', '/'),
+            rtrim('145.223.33.7', '/'),
             $token->getToken()
         );
 

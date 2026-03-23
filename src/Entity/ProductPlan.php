@@ -18,6 +18,7 @@ class ProductPlan
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+  
     #[Groups(['cart:items'])]
     private ?int $id = null;
 
@@ -36,6 +37,15 @@ class ProductPlan
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['cart:items'])]
+    private ?Product $product = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $name = null;
+
+    #[ORM\Column(length: 50)]
+    private ?string $billingCycle = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $price = null;
 
     public function getId(): ?int

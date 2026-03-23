@@ -8,6 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ProductPlanRepository::class)]
 #[ApiFilter(SearchFilter::class, properties: ['product' => 'exact'])]
@@ -17,10 +18,25 @@ class ProductPlan
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+  
+    #[Groups(['cart:items'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Product::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['cart:items'])]
+    private ?Product $product = null;
+
+    #[ORM\Column(length: 255)]
+    #[Groups(['cart:items'])]
+    private ?string $name = null;
+
+    #[ORM\Column(length: 50)]
+    #[Groups(['cart:items'])]
+    private ?string $billingCycle = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['cart:items'])]
     private ?Product $product = null;
 
     #[ORM\Column(length: 255)]

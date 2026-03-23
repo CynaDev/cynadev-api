@@ -85,11 +85,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read'])]
     private Collection $address;
 
+    /**
+     * @var Collection<int, Cart>
+     */
+    #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'customer')]
+    private Collection $carts;
+
     public function __construct()
     {
         $this->roles = [];
         $this->orders = new ArrayCollection();
         $this->address = new ArrayCollection();
+        $this->carts = new ArrayCollection();
     }
 
 
@@ -211,6 +218,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $order->setUser(null);
             }
         }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Cart>
+     */
+    public function getCarts(): Collection
+    {
+        return $this->carts;
+    }
+
+    public function addCart(Cart $cart): static
+    {
+        if (!$this->carts->contains($cart)) {
+            $this->carts->add($cart);
+            $cart->setCustomer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCart(Cart $cart): static
+    {
+        if ($this->carts->removeElement($cart)) {
+            // set the owning side to null (unless already changed)
+            if ($cart->getCustomer() === $this) {
+                $cart->setCustomer(null);
+            }
+        }
+
         return $this;
     }
 }

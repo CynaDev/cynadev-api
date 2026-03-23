@@ -48,7 +48,7 @@ class AuthController extends AbstractController
     public function logout(): JsonResponse
     {
         $response = new JsonResponse(['message' => 'Déconnecté'], 200);
-        $response->headers->clearCookie('authToken', '/', null, true, true, 'strict');
+        $response->headers->clearCookie('authToken', '/', null, false, true, 'lax');
         return $response;
     }
 }

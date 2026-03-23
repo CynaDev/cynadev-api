@@ -5,8 +5,10 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 
 use App\Repository\CartItemRepository;
+use App\Entity\ProductPlan;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: CartItemRepository::class)]
 #[ApiResource]
@@ -15,19 +17,23 @@ class CartItem
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['cart:items'])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Groups(['cart:items'])]
     private ?int $quantity = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['cart:items'])]
     private ?string $unitPrice = null;
 
     #[ORM\ManyToOne(inversedBy: 'cartItems')]
     private ?Cart $cart = null;
 
     #[ORM\ManyToOne]
-    private ?Product $product = null;
+    #[Groups(['cart:items'])]
+    private ?ProductPlan $productPlan = null;
 
     public function getId(): ?int
     {
@@ -70,14 +76,14 @@ class CartItem
         return $this;
     }
 
-    public function getProduct(): ?Product
+    public function getProductPlan(): ?ProductPlan
     {
-        return $this->product;
+        return $this->productPlan;
     }
 
-    public function setProduct(?Product $product): static
+    public function setProductPlan(?ProductPlan $productPlan): static
     {
-        $this->product = $product;
+        $this->productPlan = $productPlan;
 
         return $this;
     }

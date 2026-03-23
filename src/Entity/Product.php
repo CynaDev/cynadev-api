@@ -19,6 +19,7 @@ use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
@@ -44,9 +45,11 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['cart:items'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['cart:items'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]

@@ -11,6 +11,9 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\CategorieRepository;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 #[ORM\Entity(repositoryClass: CategorieRepository::class)]
 #[ApiResource(
@@ -23,6 +26,8 @@ use Doctrine\ORM\Mapping as ORM;
         new Delete(security: "is_granted('ROLE_ADMIN')"),
     ]
 )]
+#[ApiFilter(SearchFilter::class, properties: ['isActive' => 'exact'])]
+#[ApiFilter(OrderFilter::class, properties: ['priorite'], arguments: ['orderParameterName' => 'order'])]
 class Categorie
 {
     #[ORM\Id]
@@ -41,6 +46,9 @@ class Categorie
 
     #[ORM\Column(type: 'boolean')]
     private bool $isActive = false;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $priorite = null;
 
     public function getId(): ?int
     {
@@ -89,6 +97,18 @@ class Categorie
 
     public function setIsActive(bool $isActive){
         $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getPriorite(): ?int
+    {
+        return $this->priorite;
+    }
+
+    public function setPriorite(?int $priorite): static
+    {
+        $this->priorite = $priorite;
 
         return $this;
     }

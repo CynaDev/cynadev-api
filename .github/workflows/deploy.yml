@@ -13,14 +13,12 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         env:
-          # On récupère le contenu du secret GitHub
-          PROD_ENV_CONTENT: ${{ secrets.PROD_ENV_FILE }}
+          PROD_ENV_CONTENT: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: PROD_ENV_CONTENT # On injecte la variable pour le script
-          run: echo "${{ secrets.ENV_FILE }}" > .env
+          envs: PROD_ENV_CONTENT
           script: |
             cd /home/devuser/cynadev/cynadev-api/
             
@@ -30,11 +28,11 @@ jobs:
             # 2. On supprime le cache, les logs, les dépendances et l'ancien .env
             rm -rf var/cache/* var/log/* vendor/ .env
 
-            # 3. On crée le nouveau fichier .env avec le contenu du Secret GitHub
-            echo "$PROD_ENV_CONTENT" > .env
+            # 3. On crée le nouveau fichier .env (utiliser printenv évite de casser les sauts de ligne !)
+            printenv PROD_ENV_CONTENT > .env
 
-            # 4. On installe les dépendances (tout neuf)
-            composer install --no-dev --optimize-autoloader --no-interaction
+            # 4. On installe les dépendances (en forçant le mode prod pour éviter le bug MakerBundle)
+            APP_ENV=prod composer install --no-dev --optimize-autoloader --no-interaction
             
             # 5. On exécute les migrations et on prépare le cache
             php bin/console doctrine:migrations:migrate --no-interaction --env=prod

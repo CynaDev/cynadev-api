@@ -4,6 +4,7 @@ namespace App\Controller;
 use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -45,10 +46,10 @@ class AuthController extends AbstractController
     }
 
     #[Route('/api/logout', methods: ['POST'])]
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
         $response = new JsonResponse(['message' => 'Déconnecté'], 200);
-        $response->headers->clearCookie('authToken', '/', null, false, true, 'lax');
+        $response->headers->clearCookie('authToken', '/', null, $request->isSecure(), true, 'lax');
         return $response;
     }
 }

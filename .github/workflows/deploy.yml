@@ -3,46 +3,46 @@ name: Deploy Symfony API
 on:
   push:
     branches:
-      - main
+    - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        env:
-          PROD_ENV_CONTENT: ${{ secrets.ENV_FILE }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: PROD_ENV_CONTENT
-          script: |
-            cd /home/devuser/cynadev/cynadev-api/
-            
-            # 1. Pull du code
-            git pull origin main
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      env:
+        PROD_ENV_CONTENT: ${{ secrets.ENV_FILE }}
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        envs: PROD_ENV_CONTENT
+        script: |
+          cd /home/devuser/cynadev/cynadev-api/
 
-            # 2. Nettoyage agressif du cache uniquement
-            rm -rf var/cache/* var/log/*
+          # 1. Pull du code
+          git pull origin main
 
-            # 3. Setup du .env
-            echo "$PROD_ENV_CONTENT" > .env
+          # 2. Nettoyage agressif du cache uniquement
+          rm -rf var/cache/* var/log/*
 
-            # 4. Installation des dépendances
-            export APP_ENV=prod
-            composer install --no-dev --optimize-autoloader --no-interaction
+          # 3. Setup du .env
+          echo "$PROD_ENV_CONTENT" > .env
 
-            # 5. Database et Cache
-            php bin/console doctrine:migrations:migrate --no-interaction --env=prod
-            
-            # IMPORTANT : On vide et on prépare le cache
-            php bin/console cache:clear --env=prod
-            php bin/console cache:warmup --env=prod
+          # 4. Installation des dépendances
+          export APP_ENV=prod
+          composer install --no-dev --optimize-autoloader --no-interaction
 
-            # 6. RÉPARATION DES DROITS (C'est ça qui manque !)
-            # On s'assure que www-data peut écrire dans var/ et public/
-            sudo chown -R devuser:www-data var public/
-            sudo chmod -R 775 var public/
+          # 5. Database et Cache
+          php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
+          # IMPORTANT : On vide et on prépare le cache
+          php bin/console cache:clear --env=prod
+          php bin/console cache:warmup --env=prod
+
+          # 6. RÉPARATION DES DROITS (C'est ça qui manque !)
+          # On s'assure que www-data peut écrire dans var/ et public/
+          sudo chown -R devuser:www-data var public/
+          sudo chmod -R 775 var public/

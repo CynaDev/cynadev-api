@@ -16,3 +16,6 @@
 .env.dev
 .env
 README.md
+/public/images/categories/
+/public/images/article/
+

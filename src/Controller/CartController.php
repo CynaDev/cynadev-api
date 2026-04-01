@@ -19,7 +19,7 @@ class CartController extends AbstractController
 #[Route('/api/carts/user/{id}', methods: ['GET'])]
 public function getCartByUser(int $id, CartRepository $cartRepo, SerializerInterface $serializer): JsonResponse
   {
-      $cart = $cartRepo->findOneBy(['customer' => $id]);
+      $cart = $cartRepo->findOneBy(['user' => $id]);
       if (!$cart) {
           return new JsonResponse(['error' => 'Panier non trouvé pour cet utilisateur'], 404);
       }

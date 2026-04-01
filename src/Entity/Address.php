@@ -5,6 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\AddressRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: AddressRepository::class)]
 #[ApiResource]
@@ -13,6 +14,7 @@ class Address
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['address:read'])]
     private ?int $id = null;
 
 
@@ -20,18 +22,23 @@ class Address
     private ?User $user = null;
 
     #[ORM\Column(length: 20)]
+    #[Groups(['address:read'])]
     private ?string $num = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['address:read'])]
     private ?string $rue = null;
 
     #[ORM\Column]
+    #[Groups(['address:read'])]
     private ?int $cp = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['address:read'])]
     private ?string $compRue = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['address:read'])]
     private ?string $ville = null;
 
     public function getId(): ?int
@@ -47,18 +54,6 @@ class Address
     public function setUser(?User $user): static
     {
         $this->user = $user;
-
-        return $this;
-    }
-
-    public function getIdUser(): ?User
-    {
-        return $this->getUser();
-    }
-
-    public function setIdUser(User $id_user): static
-    {
-        $this->user = $id_user;
 
         return $this;
     }

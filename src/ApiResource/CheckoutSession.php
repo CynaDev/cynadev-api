@@ -1,0 +1,26 @@
+<?php
+
+namespace App\ApiResource;
+
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Post;
+use App\State\CheckoutSessionProcessor;
+
+#[ApiResource(
+    operations: [
+        new Post(
+            uriTemplate: '/checkout-sessions',
+            processor: CheckoutSessionProcessor::class
+        )
+    ]
+)]
+class CheckoutSession
+{
+    /** @var array<array{name: string, price: int, quantity: int}> */
+    public array $items = [];
+
+    public string $successUrl = '';
+    public string $cancelUrl  = '';
+
+    public ?string $sessionUrl = null;
+}

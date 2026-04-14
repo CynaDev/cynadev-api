@@ -17,3 +17,8 @@ services:
             $jwtTtl: '%env(int:JWT_TOKEN_TTL)%'
         tags:
           - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+    Stripe\StripeClient:
+        arguments: [ '%env(STRIPE_SECRET_KEY)%' ]
+    App\Controller\StripeWebhookController:
+        arguments:
+            $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'

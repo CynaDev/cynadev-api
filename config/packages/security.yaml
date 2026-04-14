@@ -41,6 +41,9 @@ security:
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
             # Note: Only the *first* matching rule is applied
+        stripe_webhook:
+            pattern: ^/stripe/webhook
+            security: false
     access_control:
       # - { path: ^/admin, roles: ROLE_ADMIN }
       # - { path: ^/profile, roles: ROLE_USER }

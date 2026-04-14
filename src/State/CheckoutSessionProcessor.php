@@ -28,6 +28,10 @@ class CheckoutSessionProcessor implements ProcessorInterface
             'mode'                 => 'payment',
             'success_url'          => $data->successUrl,
             'cancel_url'           => $data->cancelUrl,
+            'metadata'             => [
+                'user_id' => $data->userId,
+                'cart_id' => $data->cartId,
+            ],
         ]);
 
         $data->sessionUrl = $session->url;

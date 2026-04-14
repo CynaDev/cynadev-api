@@ -45,11 +45,11 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['cart:items'])]
+    #[Groups(['cart:items', 'order:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['cart:items'])]
+    #[Groups(['cart:items', 'order:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]

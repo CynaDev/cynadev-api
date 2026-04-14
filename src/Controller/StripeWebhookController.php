@@ -66,7 +66,6 @@ class StripeWebhookController
             return;
         }
 
-        // Calcul des totaux depuis les items du panier
         $totalTtc = array_reduce($cartItems, function (float $carry, $item) {
             return $carry + ($item->getQuantity() * (float) $item->getUnitPrice());
         }, 0.0);
@@ -81,7 +80,6 @@ class StripeWebhookController
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        // Associer les produits à la commande
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
@@ -91,7 +89,6 @@ class StripeWebhookController
 
         $this->em->persist($order);
 
-        // Vider le panier
         foreach ($cartItems as $cartItem) {
             $this->em->remove($cartItem);
         }

@@ -22,7 +22,7 @@ class CheckoutSessionProcessor implements ProcessorInterface
             'quantity' => $item['quantity'],
         ], $data->items);
 
-        $session = $this->stripe->checkout->sessions->create([
+        $params = [
             'payment_method_types' => ['card'],
             'line_items'           => $lineItems,
             'mode'                 => 'payment',
@@ -32,7 +32,13 @@ class CheckoutSessionProcessor implements ProcessorInterface
                 'user_id' => $data->userId,
                 'cart_id' => $data->cartId,
             ],
-        ]);
+        ];
+
+        if ($data->customerEmail) {
+            $params['customer_email'] = $data->customerEmail;
+        }
+
+        $session = $this->stripe->checkout->sessions->create($params);
 
         $data->sessionUrl = $session->url;
         return $data;

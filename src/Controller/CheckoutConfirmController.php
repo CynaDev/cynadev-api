@@ -8,70 +8,54 @@ use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Stripe\Exception\SignatureVerificationException;
-use Stripe\Webhook;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Stripe\StripeClient;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-class StripeWebhookController
+class CheckoutConfirmController extends AbstractController
 {
     public function __construct(
-        private string $webhookSecret,
+        private StripeClient $stripe,
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
         private CartRepository $cartRepository,
         private CartItemRepository $cartItemRepository,
     ) {}
 
-    #[Route('/stripe/webhook', name: 'stripe_webhook', methods: ['POST'])]
-    public function __invoke(Request $request): Response
+    #[Route('/api/checkout-sessions/{sessionId}/confirm', methods: ['POST'])]
+    public function __invoke(string $sessionId): JsonResponse
     {
-        $payload   = $request->getContent();
-        $sigHeader = $request->headers->get('Stripe-Signature');
+        // Vérification côté Stripe
+        $session = $this->stripe->checkout->sessions->retrieve($sessionId);
 
-        try {
-            $event = Webhook::constructEvent($payload, $sigHeader, $this->webhookSecret);
-        } catch (SignatureVerificationException) {
-            return new Response('Invalid signature', 400);
+        if ($session->payment_status !== 'paid') {
+            return new JsonResponse(['error' => 'Paiement non confirmé.'], 400);
         }
 
-        match ($event->type) {
-            'checkout.session.completed' => $this->handleCheckoutCompleted($event->data->object),
-            default                      => null,
-        };
-
-        return new Response('OK');
-    }
-
-    private function handleCheckoutCompleted(object $session): void
-    {
         $userId = $session->metadata->user_id ?? null;
         $cartId = $session->metadata->cart_id ?? null;
 
         if (!$userId || !$cartId) {
-            return;
+            return new JsonResponse(['error' => 'Métadonnées manquantes.'], 400);
         }
 
         $user = $this->userRepository->find((int) $userId);
         $cart = $this->cartRepository->find((int) $cartId);
 
         if (!$user || !$cart) {
-            return;
+            return new JsonResponse(['error' => 'Utilisateur ou panier introuvable.'], 404);
         }
 
         $cartItems = $this->cartItemRepository->findBy(['cart' => $cart]);
 
         if (empty($cartItems)) {
-            return;
+            return new JsonResponse(['status' => 'already_processed']);
         }
 
-        // Calcul des totaux depuis les items du panier
-        $totalTtc = array_reduce($cartItems, function (float $carry, $item) {
-            return $carry + ($item->getQuantity() * (float) $item->getUnitPrice());
-        }, 0.0);
-
-        // TVA à 20 %
+        $totalTtc = array_reduce($cartItems, fn(float $carry, $item) =>
+            $carry + ($item->getQuantity() * (float) $item->getUnitPrice()), 0.0
+        );
         $totalHt = round($totalTtc / 1.2, 2);
 
         $order = new Order();
@@ -81,7 +65,6 @@ class StripeWebhookController
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        // Associer les produits à la commande
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
@@ -91,11 +74,12 @@ class StripeWebhookController
 
         $this->em->persist($order);
 
-        // Vider le panier
         foreach ($cartItems as $cartItem) {
             $this->em->remove($cartItem);
         }
 
         $this->em->flush();
+
+        return new JsonResponse(['status' => 'created', 'orderId' => $order->getId()]);
     }
 }

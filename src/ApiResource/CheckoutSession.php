@@ -23,4 +23,7 @@ class CheckoutSession
     public string $cancelUrl  = '';
 
     public ?string $sessionUrl = null;
+
+    public ?int $userId = null;
+    public ?int $cartId = null;
 }

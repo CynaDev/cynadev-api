@@ -6,7 +6,9 @@ use App\Config\Statuses_enums;
 use App\Entity\Order;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
+use App\Repository\StockRepository;
 use App\Repository\UserRepository;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +23,8 @@ class CheckoutConfirmController extends AbstractController
         private UserRepository $userRepository,
         private CartRepository $cartRepository,
         private CartItemRepository $cartItemRepository,
+        private StockRepository $stockRepository,
+        private EmailService $emailService,
     ) {}
 
     #[Route('/api/checkout-sessions/{sessionId}/confirm', methods: ['POST'])]
@@ -69,6 +73,12 @@ class CheckoutConfirmController extends AbstractController
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
                 $order->addProduct($product);
+
+                $stock = $this->stockRepository->findOneBy(['product' => $product]);
+                if ($stock !== null) {
+                    $newQty = max(0, $stock->getQuantite() - $cartItem->getQuantity());
+                    $stock->setQuantite($newQty);
+                }
             }
         }
 
@@ -79,6 +89,8 @@ class CheckoutConfirmController extends AbstractController
         }
 
         $this->em->flush();
+
+        $this->emailService->sendOrderConfirmationEmail($user, $order, $cartItems);
 
         return new JsonResponse(['status' => 'created', 'orderId' => $order->getId()]);
     }

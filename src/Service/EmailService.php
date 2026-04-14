@@ -3,6 +3,7 @@
 
 namespace App\Service;
 
+use App\Entity\Order;
 use App\Entity\Token;
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
@@ -61,6 +62,64 @@ class EmailService
                 'email' => $emailAddress,
                 'user_id' => $user->getId(),
                 'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function sendOrderConfirmationEmail(User $user, Order $order, array $cartItems = []): bool
+    {
+        $emailAddress = $user->getEmail();
+
+        if (!$emailAddress) {
+            $this->logger->warning('Email de confirmation non envoyé : email manquant', [
+                'user_id' => $user->getId(),
+                'order_id' => $order->getId(),
+            ]);
+            return false;
+        }
+
+        $lines = array_map(function ($item) {
+            $plan    = $item->getProductPlan();
+            $name    = $plan?->getProduct()?->getName() ?? 'Produit';
+            $cycle   = $plan?->getBillingCycle() === 'annuel' ? 'Annuel' : 'Mensuel';
+            $unitHt  = round((float) $item->getUnitPrice() / 1.2, 2);
+            $totalHt = round($unitHt * $item->getQuantity(), 2);
+
+            return [
+                'name'     => $name,
+                'cycle'    => $cycle,
+                'quantity' => $item->getQuantity(),
+                'unitHt'   => number_format($unitHt, 2, ',', ' '),
+                'totalHt'  => number_format($totalHt, 2, ',', ' '),
+            ];
+        }, $cartItems);
+
+        $email = (new Email())
+            ->from($this->mailFrom)
+            ->to($emailAddress)
+            ->subject('Confirmation de votre commande #' . $order->getId() . ' - Cynadev')
+            ->html($this->twig->render('emails/OrderConfirmationEmail.html.twig', [
+                'username' => $user->getFirstName() ?: $emailAddress,
+                'orderId'  => $order->getId(),
+                'date'     => $order->getDateCommande()?->format('d/m/Y'),
+                'lines'    => $lines,
+                'totalHt'  => number_format((float) $order->getTotalHt(), 2, ',', ' '),
+                'totalTtc' => number_format((float) $order->getTotalTtc(), 2, ',', ' '),
+            ]));
+
+        try {
+            $this->mailer->send($email);
+            $this->logger->info('Email de confirmation de commande envoyé', [
+                'email'    => $emailAddress,
+                'order_id' => $order->getId(),
+            ]);
+            return true;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('Impossible d\'envoyer le mail de confirmation', [
+                'email'    => $emailAddress,
+                'order_id' => $order->getId(),
+                'error'    => $e->getMessage(),
             ]);
             return false;
         }

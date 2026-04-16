@@ -16,7 +16,7 @@ class UserCreatedListener
     public function postPersist(User $user): void
     {
         $cart = new Cart();
-        $cart->setCustomer($user);
+        $cart->setUser($user);
         $cart->setCreatedAt(new \DateTimeImmutable());
 
         $this->em->persist($cart);

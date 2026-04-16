@@ -88,7 +88,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Cart>
      */
-    #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'customer')]
+    #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'user')]
     private Collection $carts;
 
     public function __construct()

@@ -233,7 +233,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->carts->contains($cart)) {
             $this->carts->add($cart);
-            $cart->setCustomer($this);
+            $cart->setUser($this);
         }
 
         return $this;
@@ -243,8 +243,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->carts->removeElement($cart)) {
             // set the owning side to null (unless already changed)
-            if ($cart->getCustomer() === $this) {
-                $cart->setCustomer(null);
+            if ($cart->getUser() === $this) {
+                $cart->setUser(null);
             }
         }
 

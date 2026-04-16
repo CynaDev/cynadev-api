@@ -24,7 +24,8 @@ jobs:
 
           # 1. Pull du code (SSH requis — deploy key configurée sur le serveur)
           git remote set-url origin git@github.com:CynaDev/cynadev-api.git
-          git pull origin main
+          git fetch origin main
+          git reset --hard origin/main
 
           # 2. Nettoyage agressif du cache uniquement
           rm -rf var/cache/* var/log/*

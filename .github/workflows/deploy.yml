@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP_ENV: prod
-      APP_DEBUG: 0
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,10 +27,13 @@ jobs:
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
+      # On installe sans les scripts pour éviter que Symfony ne plante
+      # pendant l'installation des dépendances.
       - name: Install dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-      - name: Clear and warmup cache
+      # On lance les scripts Symfony manuellement une fois que le système est prêt
+      - name: Run Symfony production scripts
         run: |
           php bin/console cache:clear --env=prod --no-debug
           php bin/console cache:warmup --env=prod --no-debug
@@ -52,5 +54,5 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: >
-            -Dsonar.organization=cynadev
+            -Dsonar.organization=cynadev 
             -Dsonar.projectKey=CynaDev_cynadev-api

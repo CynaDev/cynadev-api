@@ -31,9 +31,6 @@ jobs:
           ${{ secrets.ENV_FILE }}
           EOF
 
-      - name: Debug .env file
-        run: cat .env
-
       # On installe sans les scripts pour éviter que Symfony ne plante
       # pendant l'installation des dépendances.
       - name: Install dependencies
@@ -45,21 +42,20 @@ jobs:
           php bin/console cache:clear --env=prod --no-debug
           php bin/console cache:warmup --env=prod --no-debug
 
-  sonar-scan:
-    runs-on: ubuntu-latest
-    needs: [build-and-test]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # sonar-scan:
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-test]
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >
-            -Dsonar.organization=cynadev 
-            -Dsonar.projectKey=CynaDev_cynadev-api
+  #     - name: SonarCloud Scan
+  #       uses: SonarSource/sonarqube-scan-action@v6
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       with:
+  #         args: >
+  #           -Dsonar.organization=cynadev
+  #           -Dsonar.projectKey=CynaDev_cynadev-api

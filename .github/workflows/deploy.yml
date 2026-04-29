@@ -11,6 +11,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: prod
+      APP_DEBUG: 0
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,10 +31,10 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction
 
-      - name: Cache Clear & Warmup (pour vérifier que le build fonctionne)
+      - name: Clear and warmup cache
         run: |
-          php bin/console cache:clear --env=prod
-          php bin/console cache:warmup --env=prod
+          php bin/console cache:clear --env=prod --no-debug
+          php bin/console cache:warmup --env=prod --no-debug
 
   sonar-scan:
     runs-on: ubuntu-latest
@@ -49,5 +52,5 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: >
-            -Dsonar.organization=cynadev 
+            -Dsonar.organization=cynadev
             -Dsonar.projectKey=CynaDev_cynadev-api

@@ -27,6 +27,9 @@ jobs:
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
+      - name: Debug .env file
+        run: cat .env
+
       # On installe sans les scripts pour éviter que Symfony ne plante
       # pendant l'installation des dépendances.
       - name: Install dependencies

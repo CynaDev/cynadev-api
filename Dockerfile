@@ -9,9 +9,10 @@ RUN apk add --no-cache \
     oniguruma-dev \
     libpng-dev \
     libxml2-dev \
+    postgresql-dev \
     nginx
 
-RUN docker-php-ext-install pdo pdo_mysql intl zip
+RUN docker-php-ext-install pdo pdo_pgsql intl zip
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -24,6 +25,9 @@ ENV APP_DEBUG=0
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
+RUN mkdir -p var/cache var/log public/bundles
+RUN php bin/console assets:install public --env=prod || true
+RUN php bin/console asset-map:compile --env=prod || true
 RUN php bin/console cache:clear --env=prod --no-debug || true
 RUN php bin/console cache:warmup --env=prod --no-debug || true
 

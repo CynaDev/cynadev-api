@@ -25,7 +25,11 @@ jobs:
           tools: composer:v2
 
       - name: Create .env file
-        run: printf "%s" "${{ secrets.ENV_FILE }}" > .env
+        shell: bash
+        run: |
+          cat << 'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
 
       - name: Debug .env file
         run: cat .env

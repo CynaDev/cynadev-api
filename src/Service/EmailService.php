@@ -36,7 +36,7 @@ class EmailService
 
         $verificationUrl = sprintf(
             '%s/verify-email?token=%s',
-            rtrim('145.223.33.7', '/'),
+            rtrim('cynadev.fr', '/'),
             $token->getToken()
         );
 

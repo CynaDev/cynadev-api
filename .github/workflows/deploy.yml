@@ -1,50 +1,50 @@
-name: Deploy Symfony API
+name: CI API Symfony
 
 on:
   push:
     branches:
-    - main
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      env:
-        PROD_ENV_CONTENT: ${{ secrets.ENV_FILE }}
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: PROD_ENV_CONTENT
-        script: |
-          cd /home/devuser/cynadev/cynadev-api/
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-          # 1. Pull du code (SSH requis — deploy key configurée sur le serveur)
-          git remote set-url origin git@github.com:CynaDev/cynadev-api.git
-          git fetch origin main
-          git reset --hard origin/main
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, zip
+          tools: composer:v2
 
-          # 2. Nettoyage agressif du cache uniquement
-          rm -rf var/cache/* var/log/*
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
 
-          # 3. Setup du .env
-          echo "$PROD_ENV_CONTENT" > .env
-
-          # 4. Installation des dépendances
-          export APP_ENV=prod
-          composer install --no-dev --optimize-autoloader --no-interaction
-
-          # 5. Database et Cache
-          php bin/console doctrine:migrations:migrate --no-interaction --env=prod
-
-          # IMPORTANT : On vide et on prépare le cache
+      - name: Cache Clear & Warmup (pour vérifier que le build fonctionne)
+        run: |
           php bin/console cache:clear --env=prod
           php bin/console cache:warmup --env=prod
 
-          # 6. RÉPARATION DES DROITS (C'est ça qui manque !)
-          # On s'assure que www-data peut écrire dans var/ et public/
-          sudo chown -R devuser:www-data var public/
-          sudo chmod -R 775 var public/
+  sonar-scan:
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >
+            -Dsonar.organization=cynadev 
+            -Dsonar.projectKey=CynaDev_cynadev-api

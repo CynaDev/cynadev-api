@@ -10,7 +10,8 @@ RUN apk add --no-cache \
     libpng-dev \
     libxml2-dev \
     postgresql-dev \
-    nginx
+    nginx \
+    openssl
 
 RUN docker-php-ext-install pdo pdo_pgsql intl zip
 
@@ -25,13 +26,18 @@ ENV APP_DEBUG=0
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-RUN mkdir -p var/cache var/log public/bundles
+RUN mkdir -p var/cache var/log public/bundles config/jwt
 RUN php bin/console assets:install public --env=prod || true
 RUN php bin/console asset-map:compile --env=prod || true
 RUN php bin/console cache:clear --env=prod --no-debug || true
 RUN php bin/console cache:warmup --env=prod --no-debug || true
 
-RUN chown -R www-data:www-data var public
+# ← Génération des clés JWT si elles n'existent pas encore
+RUN if [ ! -f config/jwt/private.pem ]; then \
+      php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; \
+    fi
+
+RUN chown -R www-data:www-data var public config/jwt
 
 COPY nginx.conf /etc/nginx/http.d/default.conf
 

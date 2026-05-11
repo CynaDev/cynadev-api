@@ -21,10 +21,10 @@ class ProductPlan
     #[Groups(['cart:items'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Product::class)]
+    #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'productPlans')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Groups(['cart:items'])]
-    private ?Product $product = null;
+    private ?Product $product = null; // C'est cette propriété qui crée la colonne product_id en DB
 
     #[ORM\Column(length: 255)]
     #[Groups(['cart:items'])]
@@ -38,52 +38,13 @@ class ProductPlan
     #[Groups(['cart:items'])]
     private ?string $price = null;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function getProduct(): ?Product
-    {
-        return $this->product;
-    }
-
-    public function setProduct(?Product $product): static
-    {
-        $this->product = $product;
-        return $this;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-        return $this;
-    }
-
-    public function getBillingCycle(): ?string
-    {
-        return $this->billingCycle;
-    }
-
-    public function setBillingCycle(string $billingCycle): static
-    {
-        $this->billingCycle = $billingCycle;
-        return $this;
-    }
-
-    public function getPrice(): ?string
-    {
-        return $this->price;
-    }
-
-    public function setPrice(string $price): static
-    {
-        $this->price = $price;
-        return $this;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getProduct(): ?Product { return $this->product; }
+    public function setProduct(?Product $product): static { $this->product = $product; return $this; }
+    public function getName(): ?string { return $this->name; }
+    public function setName(string $name): static { $this->name = $name; return $this; }
+    public function getBillingCycle(): ?string { return $this->billingCycle; }
+    public function setBillingCycle(string $billingCycle): static { $this->billingCycle = $billingCycle; return $this; }
+    public function getPrice(): ?string { return $this->price; }
+    public function setPrice(string $price): static { $this->price = $price; return $this; }
 }

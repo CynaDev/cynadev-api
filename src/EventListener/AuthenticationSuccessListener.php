@@ -45,7 +45,6 @@ class AuthenticationSuccessListener
           $response = $event->getResponse();
           $response->headers->setCookie($cookie);
 
-          unset($data['token']);
           $event->setData($data);
       }
 }

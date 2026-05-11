@@ -3,14 +3,8 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use App\Config\Disponibilite_enums;
 use App\Repository\ProductRepository;
+use App\Config\Disponibilite_enums;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -21,35 +15,24 @@ use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use Symfony\Component\Serializer\Attribute\Groups;
 
-
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
-    operations: [
-        new GetCollection(),
-        new Get(),
-        new Post(security: "is_granted('ROLE_ADMIN')"),
-        new Put(security: "is_granted('ROLE_ADMIN')"),
-        new Patch(security: "is_granted('ROLE_ADMIN')"),
-        new Delete(security: "is_granted('ROLE_ADMIN')"),
-    ],
     paginationEnabled: true,
-    paginationItemsPerPage: 5,
-    paginationClientItemsPerPage: true,
-    paginationMaximumItemsPerPage: 50
+    paginationItemsPerPage: 5
 )]
-#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact', 'priorite' => 'exact', 'name' => 'partial', 'description' => 'partial'])]
+#[ApiFilter(SearchFilter::class, properties: ['categoryId' => 'exact', 'name' => 'partial'])]
 #[ApiFilter(RangeFilter::class, properties: ['price'])]
-#[ApiFilter(OrderFilter::class, properties: ['price', 'priorite', 'dateAjout'], arguments: ['orderParameterName' => 'order'])]
+#[ApiFilter(OrderFilter::class, properties: ['price', 'dateAjout'])]
 class Product
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['cart:items', 'order:read'])]
+    #[Groups(['cart:items'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['cart:items', 'order:read'])]
+    #[Groups(['cart:items'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -70,92 +53,49 @@ class Product
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $dateAjout = null;
 
-    public function getId(): ?int
+    #[ORM\OneToMany(mappedBy: 'product', targetEntity: ProductPlan::class, cascade: ['persist', 'remove'])]
+    private Collection $productPlans;
+
+    public function __construct()
     {
-        return $this->id;
+        $this->productPlans = new ArrayCollection();
     }
 
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
+    // --- Getters & Setters Standard ---
 
-    public function setName(string $name): static
-    {
-        $this->name = $name;
+    public function getId(): ?int { return $this->id; }
+    public function getName(): ?string { return $this->name; }
+    public function setName(string $name): static { $this->name = $name; return $this; }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $description): static { $this->description = $description; return $this; }
+    public function getCategoryId(): ?int { return $this->categoryId; }
+    public function setCategoryId(int $categoryId): static { $this->categoryId = $categoryId; return $this; }
+    public function getPrice(): ?string { return $this->price; }
+    public function setPrice(string $price): static { $this->price = $price; return $this; }
+    public function getDisponibilite(): ?Disponibilite_enums { return $this->disponibilite; }
+    public function setDisponibilite(Disponibilite_enums $disponibilite): static { $this->disponibilite = $disponibilite; return $this; }
+    public function getPriorite(): ?int { return $this->priorite; }
+    public function setPriorite(?int $priorite): static { $this->priorite = $priorite; return $this; }
+    public function getDateAjout(): ?\DateTime { return $this->dateAjout; }
+    public function setDateAjout(\DateTime $dateAjout): static { $this->dateAjout = $dateAjout; return $this; }
 
+    /** @return Collection<int, ProductPlan> */
+    public function getProductPlans(): Collection { return $this->productPlans; }
+
+    public function addProductPlan(ProductPlan $productPlan): static
+    {
+        if (!$this->productPlans->contains($productPlan)) {
+            $this->productPlans->add($productPlan);
+            $productPlan->setProduct($this);
+        }
         return $this;
     }
 
-    public function getDescription(): ?string
+    public function removeProductPlan(ProductPlan $productPlan): static
     {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): static
-    {
-        $this->description = $description;
-
-        return $this;
-    }
-
-    public function getCategoryId(): ?int
-    {
-        return $this->categoryId;
-    }
-
-    public function setCategoryId(int $categoryId): static
-    {
-        $this->categoryId = $categoryId;
-
-        return $this;
-    }
-
-    public function getPrice(): ?string
-    {
-        return $this->price;
-    }
-
-    public function setPrice(string $price): static
-    {
-        $this->price = $price;
-
-        return $this;
-    }
-
-    public function getDisponibilite(): ?Disponibilite_enums
-    {
-        return $this->disponibilite;
-    }
-
-    public function setDisponibilite(Disponibilite_enums $disponibilite): static
-    {
-        $this->disponibilite = $disponibilite;
-
-        return $this;
-    }
-
-    public function getPriorite(): ?int
-    {
-        return $this->priorite;
-    }
-
-    public function setPriorite(?int $priorite): static
-    {
-        $this->priorite = $priorite;
-        return $this;
-    }
-
-
-    public function getDateAjout(): ?\DateTime
-    {
-        return $this->dateAjout;
-    }
-
-    public function setDateAjout(\DateTime $dateAjout): static
-    {
-        $this->dateAjout = $dateAjout;
-
+        if ($this->productPlans->removeElement($productPlan)) {
+            if ($productPlan->getProduct() === $this) { $productPlan->setProduct(null); }
+        }
         return $this;
     }
 }

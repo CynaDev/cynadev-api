@@ -13,6 +13,7 @@ use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Repository\StockRepository;
 
 class StripeWebhookController
 {
@@ -22,6 +23,7 @@ class StripeWebhookController
         private UserRepository $userRepository,
         private CartRepository $cartRepository,
         private CartItemRepository $cartItemRepository,
+        private StockRepository $stockRepository,
     ) {}
 
     #[Route('/stripe/webhook', name: 'stripe_webhook', methods: ['POST'])]
@@ -37,9 +39,10 @@ class StripeWebhookController
         }
 
         match ($event->type) {
-            'checkout.session.completed' => $this->handleCheckoutCompleted($event->data->object),
-            default                      => null,
-        };
+    'checkout.session.completed'  => $this->handleCheckoutCompleted($event->data->object),
+    'payment_intent.succeeded'    => $this->handlePaymentIntentSucceeded($event->data->object),
+    default                       => null,
+};
 
         return new Response('OK');
     }
@@ -95,4 +98,48 @@ class StripeWebhookController
 
         $this->em->flush();
     }
+
+
+    private function handlePaymentIntentSucceeded(object $intent): void
+{
+    $userId = $intent->metadata->user_id ?? null;
+    $cartId = $intent->metadata->cart_id ?? null;
+
+    if (!$userId || !$cartId) return;
+
+    $user = $this->userRepository->find((int) $userId);
+    $cart = $this->cartRepository->find((int) $cartId);
+
+    if (!$user || !$cart) return;
+
+    $cartItems = $this->cartItemRepository->findBy(['cart' => $cart]);
+    if (empty($cartItems)) return; // déjà traité
+
+    $totalTtc = array_reduce($cartItems, fn(float $carry, $item) =>
+        $carry + ($item->getQuantity() * (float) $item->getUnitPrice()), 0.0
+    );
+    $totalHt = round($totalTtc / 1.2, 2);
+
+    $order = new Order();
+    $order->setUser($user);
+    $order->setTotalHt((string) $totalHt);
+    $order->setTotalTtc((string) $totalTtc);
+    $order->setStatus(Statuses_enums::Payee);
+    $order->setDateCommande(new \DateTime());
+
+    foreach ($cartItems as $cartItem) {
+        $product = $cartItem->getProductPlan()?->getProduct();
+        if ($product) {
+            $order->addProduct($product);
+            $stock = $this->stockRepository->findOneBy(['product' => $product]);
+            if ($stock !== null) {
+                $stock->setQuantite(max(0, $stock->getQuantite() - $cartItem->getQuantity()));
+            }
+        }
+    }
+
+    $this->em->persist($order);
+    foreach ($cartItems as $cartItem) $this->em->remove($cartItem);
+    $this->em->flush();
+}
 }

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Config\Statuses_enums;
 use App\Entity\Order;
+use App\Entity\OrderItem;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
 use App\Repository\StockRepository;
@@ -30,7 +31,6 @@ class CheckoutConfirmController extends AbstractController
     #[Route('/api/checkout-sessions/{sessionId}/confirm', methods: ['POST'])]
     public function __invoke(string $sessionId): JsonResponse
     {
-        // Vérification côté Stripe
         $session = $this->stripe->checkout->sessions->retrieve($sessionId);
 
         if ($session->payment_status !== 'paid') {
@@ -72,7 +72,12 @@ class CheckoutConfirmController extends AbstractController
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
-                $order->addProduct($product);
+                $orderItem = new OrderItem();
+                $orderItem->setProduct($product);
+                $orderItem->setQuantity($cartItem->getQuantity());
+                $orderItem->setPrice($cartItem->getUnitPrice()); // prix au moment de la commande
+                $order->addOrderItem($orderItem);
+                $this->em->persist($orderItem); // ← persist chaque OrderItem
 
                 $stock = $this->stockRepository->findOneBy(['product' => $product]);
                 if ($stock !== null) {

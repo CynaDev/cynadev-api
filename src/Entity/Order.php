@@ -1,5 +1,4 @@
 <?php
-// api/src/Entity/Order.php
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiFilter;
@@ -10,7 +9,6 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\GetCollection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use App\Config\Statuses_enums;
 use App\Repository\OrderRepository;
@@ -41,12 +39,11 @@ class Order
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['order:read', 'order:write'])]
     #[ApiFilter(SearchFilter::class, properties: ['user.id'])]
-    // #[ApiFilter(OrderFilter::class, properties: ['user.id'])]
     private ?User $user = null;
 
-    #[ORM\ManyToMany(targetEntity: Product::class)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, cascade: ['persist', 'remove'])]
     #[Groups(['order:read'])]
-    private Collection $products;
+    private Collection $orderItems;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['order:read', 'order:write'])]
@@ -66,86 +63,45 @@ class Order
 
     public function __construct()
     {
-        $this->products = new ArrayCollection();
+        $this->orderItems = new ArrayCollection(); // ← corrigé (était $this->products)
     }
 
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function setUser(?User $user): self
-    {
-        $this->user = $user;
-        return $this;
-    }
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): self { $this->user = $user; return $this; }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getTotalHt(): ?string { return $this->totalHt; }
+    public function setTotalHt(string $totalHt): self { $this->totalHt = $totalHt; return $this; }
 
-    public function getTotalHt(): ?string
-    {
-        return $this->totalHt;
-    }
+    public function getTotalTtc(): ?string { return $this->totalTtc; }
+    public function setTotalTtc(string $totalTtc): self { $this->totalTtc = $totalTtc; return $this; }
 
-    public function setTotalHt(string $totalHt): self
-    {
-        $this->totalHt = $totalHt;
-        return $this;
-    }
+    public function getStatus(): ?Statuses_enums { return $this->status; }
+    public function setStatus(Statuses_enums $status): self { $this->status = $status; return $this; }
 
-    public function getTotalTtc(): ?string
-    {
-        return $this->totalTtc;
-    }
+    public function getDateCommande(): ?\DateTime { return $this->dateCommande; }
+    public function setDateCommande(?\DateTime $dateCommande): self { $this->dateCommande = $dateCommande; return $this; }
 
-    public function setTotalTtc(string $totalTtc): self
-    {
-        $this->totalTtc = $totalTtc;
-        return $this;
-    }
+    /** @return Collection<int, OrderItem> */
+    public function getOrderItems(): Collection { return $this->orderItems; }
 
-    public function getStatus(): ?Statuses_enums
+    public function addOrderItem(OrderItem $orderItem): self
     {
-        return $this->status;
-    }
-
-    public function setStatus(Statuses_enums $status): self
-    {
-        $this->status = $status;
-        return $this;
-    }
-
-    public function getDateCommande(): ?\DateTime
-    {
-        return $this->dateCommande;
-    }
-
-    public function setDateCommande(?\DateTime $dateCommande): self
-    {
-        $this->dateCommande = $dateCommande;
-        return $this;
-    }
-
-    public function getProducts(): Collection
-    {
-        return $this->products;
-    }
-
-    public function addProduct(Product $product): self
-    {
-        if (!$this->products->contains($product)) {
-            $this->products->add($product);
+        if (!$this->orderItems->contains($orderItem)) {
+            $this->orderItems->add($orderItem);
+            $orderItem->setOrder($this);
         }
         return $this;
     }
 
-    public function removeProduct(Product $product): self
+    public function removeOrderItem(OrderItem $orderItem): self
     {
-        $this->products->removeElement($product);
+        if ($this->orderItems->removeElement($orderItem)) {
+            if ($orderItem->getOrder() === $this) {
+                $orderItem->setOrder(null);
+            }
+        }
         return $this;
     }
-
 }

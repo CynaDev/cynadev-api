@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Config\Statuses_enums;
 use App\Entity\Order;
+use App\Entity\OrderItem;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
 use App\Repository\StockRepository;
@@ -40,7 +41,6 @@ class PaymentConfirmController extends AbstractController
             return new JsonResponse(['error' => 'PaymentIntent manquant.'], 400);
         }
 
-        // Vérification auprès de Stripe
         $intent = $this->stripe->paymentIntents->retrieve($paymentIntentId);
         if ($intent->status !== 'succeeded') {
             return new JsonResponse(['error' => 'Paiement non confirmé.'], 400);
@@ -76,7 +76,12 @@ class PaymentConfirmController extends AbstractController
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
-                $order->addProduct($product);
+                $orderItem = new OrderItem();
+                $orderItem->setProduct($product);
+                $orderItem->setQuantity($cartItem->getQuantity());
+                $orderItem->setPrice($cartItem->getUnitPrice());
+                $order->addOrderItem($orderItem);
+                $this->em->persist($orderItem);
 
                 $stock = $this->stockRepository->findOneBy(['product' => $product]);
                 if ($stock !== null) {

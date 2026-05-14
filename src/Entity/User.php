@@ -31,7 +31,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Get(),
         new Put(processor: UserPasswordHasher::class),
         new Patch(processor: UserPasswordHasher::class),
-        new Delete(),
+        new Delete(security: "is_granted('ROLE_ADMIN')"),
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:create', 'user:update']],
@@ -71,7 +71,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $lastName = null;
 
     #[ORM\Column(type: 'json')]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:update'])]
     private array $roles = [];
 
     #[ORM\Column(type: 'boolean')]
@@ -179,12 +179,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return (string) $this->email;
     }
 
-    
+
     public function isVerified(): bool
     {
         return $this->isVerified;
     }
-    
+
     public function setIsVerified(bool $isVerified): self
     {
         $this->isVerified = $isVerified;

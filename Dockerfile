@@ -8,12 +8,24 @@ RUN apk add --no-cache \
     icu-dev \
     oniguruma-dev \
     libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     libxml2-dev \
     postgresql-dev \
     nginx \
     openssl
 
-RUN docker-php-ext-install pdo pdo_pgsql intl zip
+# Extensions existantes + mbstring + gd (requis par DomPDF)
+RUN docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        intl \
+        zip \
+        mbstring \
+        gd
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -32,7 +44,6 @@ RUN php bin/console asset-map:compile --env=prod || true
 RUN php bin/console cache:clear --env=prod --no-debug || true
 RUN php bin/console cache:warmup --env=prod --no-debug || true
 
-# ← Génération des clés JWT si elles n'existent pas encore
 RUN if [ ! -f config/jwt/private.pem ]; then \
       php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; \
     fi

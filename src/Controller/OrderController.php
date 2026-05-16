@@ -39,9 +39,9 @@ class OrderController extends AbstractController
     {
         $order = $orderRepository->find($id);
 
-        if (!$order || $order->getUser() !== $this->getUser()) {
-            throw $this->createNotFoundException();
-        }
+        if (!$order || ($order->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN'))) {                                           
+            throw $this->createNotFoundException();                                                                                             
+        } 
 
         $dompdf = new \Dompdf\Dompdf();
         $dompdf->loadHtml($this->renderView('invoice/invoice.html.twig', [

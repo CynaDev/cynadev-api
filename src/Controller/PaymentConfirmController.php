@@ -73,6 +73,15 @@ class PaymentConfirmController extends AbstractController
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
+        // ← Récupère le stripeSubscriptionId si c'est un abonnement
+        $invoiceId = $intent->invoice;
+        if ($invoiceId) {
+            $invoice = $this->stripe->invoices->retrieve((string) $invoiceId);
+            if ($invoice->subscription) {
+                $order->setStripeSubscriptionId((string) $invoice->subscription);
+            }
+        }
+
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
             if ($product) {
@@ -80,6 +89,7 @@ class PaymentConfirmController extends AbstractController
                 $orderItem->setProduct($product);
                 $orderItem->setQuantity($cartItem->getQuantity());
                 $orderItem->setPrice($cartItem->getUnitPrice());
+                $orderItem->setProductPlan($cartItem->getProductPlan());
                 $order->addOrderItem($orderItem);
                 $this->em->persist($orderItem);
 
@@ -93,13 +103,15 @@ class PaymentConfirmController extends AbstractController
 
         $this->em->persist($order);
 
+        $cartItemsSnapshot = array_map(fn($item) => clone $item, $cartItems);
+
         foreach ($cartItems as $cartItem) {
             $this->em->remove($cartItem);
         }
 
         $this->em->flush();
 
-        $this->emailService->sendOrderConfirmationEmail($user, $order, $cartItems);
+        $this->emailService->sendOrderConfirmationEmail($user, $order, $cartItemsSnapshot);
 
         return new JsonResponse(['status' => 'created', 'orderId' => $order->getId()]);
     }

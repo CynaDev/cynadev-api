@@ -91,6 +91,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'user')]
     private Collection $carts;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripeCustomerId = null;
+
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripeCustomerId;
+    }
+    public function setStripeCustomerId(?string $id): self
+    {
+        $this->stripeCustomerId = $id;
+        return $this;
+    }
+
     public function __construct()
     {
         $this->roles = [];

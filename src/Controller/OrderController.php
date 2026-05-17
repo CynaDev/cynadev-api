@@ -9,9 +9,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
-
+use Stripe\StripeClient;
+use Doctrine\ORM\EntityManagerInterface;
 class OrderController extends AbstractController
 {
+
+    public function __construct(
+        private StripeClient $stripe,
+        private EntityManagerInterface $em,
+    ) {
+    }
     #[Route('/api/users/{id}/orders', methods: ['GET'])]
     public function getOrdersByUser(
         int $id,
@@ -39,9 +46,9 @@ class OrderController extends AbstractController
     {
         $order = $orderRepository->find($id);
 
-        if (!$order || ($order->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN'))) {                                           
-            throw $this->createNotFoundException();                                                                                             
-        } 
+        if (!$order || ($order->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN'))) {
+            throw $this->createNotFoundException();
+        }
 
         $dompdf = new \Dompdf\Dompdf();
         $dompdf->loadHtml($this->renderView('invoice/invoice.html.twig', [
@@ -57,4 +64,34 @@ class OrderController extends AbstractController
             'Content-Disposition' => 'attachment; filename="facture-' . $order->getId() . '.pdf"',
         ]);
     }
+
+    #[Route('/api/orders/{id}/cancel-subscription', methods: ['POST'])]
+public function cancelSubscription(int $id, OrderRepository $orderRepository): JsonResponse
+{
+    $order = $orderRepository->find($id);
+
+    if (!$order || $order->getUser() !== $this->getUser()) {
+        throw $this->createNotFoundException();
+    }
+
+    $subscriptionId = $order->getStripeSubscriptionId();
+    if (!$subscriptionId) {
+        return new JsonResponse(['error' => 'Aucun abonnement actif.'], 400);
+    }
+
+    // Update Stripe
+    $this->stripe->subscriptions->update($subscriptionId, [
+        'cancel_at_period_end' => true,
+    ]);
+
+    // Retrieve après update — cancel_at est rempli automatiquement
+    $subscription = $this->stripe->subscriptions->retrieve($subscriptionId);
+    $endsAt = (new \DateTime())->setTimestamp((int) $subscription->cancel_at);
+
+    $order->setCancelAtPeriodEnd(true);
+    $order->setSubscriptionEndsAt($endsAt);
+    $this->em->flush();
+
+    return new JsonResponse(['status' => 'cancelled']);
+}
 }

@@ -16,7 +16,7 @@ use App\State\CheckoutSessionProcessor;
 )]
 class CheckoutSession
 {
-    /** @var array<array{name: string, price: int, quantity: int}> */
+    /** @var array<array{stripePriceId: string, quantity: int}> */
     public array $items = [];
 
     public string $successUrl = '';

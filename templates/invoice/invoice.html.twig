@@ -18,18 +18,18 @@
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 40px;
-      border-bottom: 2px solid #7c3aed;
+      border-bottom: 2px solid #4f39f6;
       padding-bottom: 20px;
     }
 
     .company-name {
       font-size: 24px;
       font-weight: bold;
-      color: #7c3aed;
+      color: #4f39f6;
     }
 
     .invoice-title { text-align: right; }
-    .invoice-title h1 { font-size: 28px; color: #7c3aed; margin-bottom: 4px; }
+    .invoice-title h1 { font-size: 28px; color: #4f39f6; margin-bottom: 4px; }
     .invoice-title p { color: #666; font-size: 12px; }
 
     .meta {
@@ -61,20 +61,31 @@
     .badge-Expediee   { background: #dbeafe; color: #1d4ed8; }
     .badge-Annulee    { background: #fee2e2; color: #dc2626; }
 
+    /* Badge cycle — même style que l'email */
+    .badge-cycle {
+      background-color: #ede9fe;
+      color: #4f39f6;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
     table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
 
-    thead tr { background: #7c3aed; color: white; }
+    thead tr { background: #4f39f6; color: white; }
     thead th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; }
 
     tbody tr:nth-child(even) { background: #f9f7ff; }
     tbody td { padding: 10px 12px; border-bottom: 1px solid #e9e7f0; }
 
     .text-right { text-align: right; }
+    .text-center { text-align: center; }
 
     .totals { margin-left: auto; width: 260px; }
     .totals table { margin-bottom: 0; }
     .totals td { padding: 6px 12px; border: none; }
-    .totals tr:last-child { background: #7c3aed; color: white; font-weight: bold; font-size: 14px; }
+    .totals tr:last-child { background: #4f39f6; color: white; font-weight: bold; font-size: 14px; }
     .totals tr:last-child td { padding: 10px 12px; }
 
     .footer {
@@ -137,16 +148,24 @@
     <thead>
       <tr>
         <th>Produit</th>
-        <th class="text-right">Quantité</th>
-        <th class="text-right">Prix unitaire</th>
-        <th class="text-right">Sous-total</th>
+        <th class="text-center">Cycle</th>
+        <th class="text-center">Quantité</th>
+        <th class="text-right">Prix unitaire HT</th>
+        <th class="text-right">Sous-total HT</th>
       </tr>
     </thead>
     <tbody>
       {% for item in order.orderItems %}
       <tr>
         <td>{{ item.product.name }}</td>
-        <td class="text-right">{{ item.quantity }}</td>
+          <td class="text-center">
+          {% if item.productPlan is defined and item.productPlan %}
+            <span class="badge-cycle">{{ item.productPlan.billingCycle }}</span>
+          {% else %}
+            <span class="badge-cycle">—</span>
+          {% endif %}
+        </td>
+        <td class="text-center">{{ item.quantity }}</td>
         <td class="text-right">{{ item.price|number_format(2, ',', ' ') }} €</td>
         <td class="text-right">
           {{ (item.price * item.quantity)|number_format(2, ',', ' ') }} €

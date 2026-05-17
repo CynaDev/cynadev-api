@@ -33,17 +33,62 @@ class OrderItem
     #[Groups(['order:read'])]
     private ?string $price = null; // prix unitaire au moment de la commande
 
-    public function getId(): ?int { return $this->id; }
+    #[ORM\ManyToOne(targetEntity: ProductPlan::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['order:read'])]
+    private ?ProductPlan $productPlan = null;
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getProduct(): ?Product { return $this->product; }
-    public function setProduct(?Product $product): self { $this->product = $product; return $this; }
+    public function getProduct(): ?Product
+    {
+        return $this->product;
+    }
+    public function setProduct(?Product $product): self
+    {
+        $this->product = $product;
+        return $this;
+    }
 
-    public function getOrder(): ?Order { return $this->order; }
-    public function setOrder(?Order $order): self { $this->order = $order; return $this; }
+    public function getOrder(): ?Order
+    {
+        return $this->order;
+    }
+    public function setOrder(?Order $order): self
+    {
+        $this->order = $order;
+        return $this;
+    }
 
-    public function getQuantity(): int { return $this->quantity; }
-    public function setQuantity(int $quantity): self { $this->quantity = $quantity; return $this; }
+    public function getQuantity(): int
+    {
+        return $this->quantity;
+    }
+    public function setQuantity(int $quantity): self
+    {
+        $this->quantity = $quantity;
+        return $this;
+    }
 
-    public function getPrice(): ?string { return $this->price; }
-    public function setPrice(string $price): self { $this->price = $price; return $this; }
+    public function getPrice(): ?string
+    {
+        return $this->price;
+    }
+    public function setPrice(string $price): self
+    {
+        $this->price = $price;
+        return $this;
+    }
+
+    public function getProductPlan(): ?ProductPlan
+    {
+        return $this->productPlan;
+    }
+    public function setProductPlan(?ProductPlan $productPlan): self
+    {
+        $this->productPlan = $productPlan;
+        return $this;
+    }
 }

@@ -61,30 +61,113 @@ class Order
     #[Groups(['order:read'])]
     private ?\DateTime $dateCommande = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $stripeSubscriptionId = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['order:read'])]
+    private bool $cancelAtPeriodEnd = false;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTime $subscriptionEndsAt = null;
+
+    public function getSubscriptionEndsAt(): ?\DateTime
+    {
+        return $this->subscriptionEndsAt;
+    }
+    public function setSubscriptionEndsAt(?\DateTime $d): self
+    {
+        $this->subscriptionEndsAt = $d;
+        return $this;
+    }
+
+    public function isCancelAtPeriodEnd(): bool
+    {
+        return $this->cancelAtPeriodEnd;
+    }
+    public function setCancelAtPeriodEnd(bool $v): self
+    {
+        $this->cancelAtPeriodEnd = $v;
+        return $this;
+    }
+
+    public function getStripeSubscriptionId(): ?string
+    {
+        return $this->stripeSubscriptionId;
+    }
+    public function setStripeSubscriptionId(?string $id): self
+    {
+        $this->stripeSubscriptionId = $id;
+        return $this;
+    }
+
     public function __construct()
     {
         $this->orderItems = new ArrayCollection(); // ← corrigé (était $this->products)
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getUser(): ?User { return $this->user; }
-    public function setUser(?User $user): self { $this->user = $user; return $this; }
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+        return $this;
+    }
 
-    public function getTotalHt(): ?string { return $this->totalHt; }
-    public function setTotalHt(string $totalHt): self { $this->totalHt = $totalHt; return $this; }
+    public function getTotalHt(): ?string
+    {
+        return $this->totalHt;
+    }
+    public function setTotalHt(string $totalHt): self
+    {
+        $this->totalHt = $totalHt;
+        return $this;
+    }
 
-    public function getTotalTtc(): ?string { return $this->totalTtc; }
-    public function setTotalTtc(string $totalTtc): self { $this->totalTtc = $totalTtc; return $this; }
+    public function getTotalTtc(): ?string
+    {
+        return $this->totalTtc;
+    }
+    public function setTotalTtc(string $totalTtc): self
+    {
+        $this->totalTtc = $totalTtc;
+        return $this;
+    }
 
-    public function getStatus(): ?Statuses_enums { return $this->status; }
-    public function setStatus(Statuses_enums $status): self { $this->status = $status; return $this; }
+    public function getStatus(): ?Statuses_enums
+    {
+        return $this->status;
+    }
+    public function setStatus(Statuses_enums $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
 
-    public function getDateCommande(): ?\DateTime { return $this->dateCommande; }
-    public function setDateCommande(?\DateTime $dateCommande): self { $this->dateCommande = $dateCommande; return $this; }
+    public function getDateCommande(): ?\DateTime
+    {
+        return $this->dateCommande;
+    }
+    public function setDateCommande(?\DateTime $dateCommande): self
+    {
+        $this->dateCommande = $dateCommande;
+        return $this;
+    }
 
     /** @return Collection<int, OrderItem> */
-    public function getOrderItems(): Collection { return $this->orderItems; }
+    public function getOrderItems(): Collection
+    {
+        return $this->orderItems;
+    }
 
     public function addOrderItem(OrderItem $orderItem): self
     {

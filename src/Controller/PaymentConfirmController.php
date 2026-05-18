@@ -73,13 +73,17 @@ class PaymentConfirmController extends AbstractController
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        // ← Récupère le stripeSubscriptionId si c'est un abonnement
-        $invoiceId = $intent->invoice;
+        // Récupère le stripeSubscriptionId
+        $invoiceId = $intent->invoice ?? null;
         if ($invoiceId) {
+            // Flux Vue.js — PaymentIntent lié à une invoice Stripe
             $invoice = $this->stripe->invoices->retrieve((string) $invoiceId);
             if ($invoice->subscription) {
                 $order->setStripeSubscriptionId((string) $invoice->subscription);
             }
+        } elseif (!empty($intent->metadata['sub_id'])) {
+            // Flux Mobile — PaymentIntent créé manuellement, sub_id dans les metadata
+            $order->setStripeSubscriptionId($intent->metadata['sub_id']);
         }
 
         foreach ($cartItems as $cartItem) {

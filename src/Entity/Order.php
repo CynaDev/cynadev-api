@@ -27,6 +27,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     normalizationContext: ['groups' => ['order:read']],
 )]
+#[ApiFilter(DateFilter::class, properties: ['dateCommande'])]
 class Order
 {
     #[ORM\Id]

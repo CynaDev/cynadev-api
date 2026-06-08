@@ -39,6 +39,7 @@ class Product
     private ?string $description = null;
 
     #[ORM\Column]
+    #[Groups(['cart:items', 'order:read'])]
     private ?int $categoryId = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]

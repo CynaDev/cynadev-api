@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Cart;
 use App\Entity\CartItem;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
@@ -86,4 +87,18 @@ public function addCartItem(int $id, Request $request, CartRepository $cartRepo,
       return new JsonResponse($data, 201, [], true);
   }
 
+#[Route('/api/carts/average-cost', methods: ['GET'], priority:10)]
+public function getAverageCartCost(CartRepository $cartRepo): JsonResponse
+{
+    $carts = $cartRepo->findAll();
+
+    if (empty($carts)) {
+        return new JsonResponse(['error' => 'Aucun panier trouvé'], 404);
+    }
+
+    $total = array_sum(array_map(fn(Cart $cart) => $cart->getTotalCost(), $carts));
+    $average = $total / count($carts);
+
+    return new JsonResponse(['average_cost' => round($average, 2)], 200);
+}
 }

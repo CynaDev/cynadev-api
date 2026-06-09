@@ -13,6 +13,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Twig\Environment;
 use App\Entity\Product;
+use App\Entity\Contact;
 
 
 class EmailService
@@ -204,6 +205,48 @@ class EmailService
             $this->logger->error('Impossible d\'envoyer l\'alerte de stock', [
                 'product_id' => $product->getId(),
                 'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function sendContactReplyEmail(User $admin, Contact $contact, string $reply): bool
+    {
+        $to = $contact->getEmail();
+        if (!$to) {
+            $this->logger->warning('Contact sans email, impossible d\'envoyer la réponse', [
+                'contact_id' => $contact->getId(),
+            ]);
+            return false;
+        }
+
+        $subject = 'Re : ' . $contact->getSujet();
+
+        $html = $this->twig->render('emails/ContactReplyEmail.html.twig', [
+            'contact' => $contact,
+            'reply' => $reply,
+            'admin' => $admin,
+        ]);
+
+        $email = (new Email())
+            ->from($this->mailFrom)
+            ->to($to)
+            ->cc($admin->getEmail())
+            ->subject($subject)
+            ->html($html);
+
+        try {
+            $this->mailer->send($email);
+            $this->logger->info('Réponse au contact envoyée', [
+                'contact_id' => $contact->getId(),
+                'to' => $to,
+                'admin' => $admin->getId(),
+            ]);
+            return true;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('Impossible d\'envoyer la réponse au contact', [
+                'contact_id' => $contact->getId(),
+                'error' => $e->getMessage(),
             ]);
             return false;
         }

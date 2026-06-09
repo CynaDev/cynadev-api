@@ -83,6 +83,8 @@ class EmailService
             ->to($emailAddress)
             ->subject('Code de connexion administrateur - Cynadev')
             ->html($this->twig->render('emails/AdminTwoFactorCodeEmail.html.twig', [
+                'firstName' => $user->getFirstName() ?? '',
+                'lastName' => $user->getLastName() ?? '',
                 'username' => $user->getUserIdentifier(),
                 'code' => $code,
             ]));

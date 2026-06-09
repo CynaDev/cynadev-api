@@ -6,6 +6,7 @@ namespace App\Service;
 use App\Entity\Order;
 use App\Entity\Token;
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
@@ -20,6 +21,7 @@ class EmailService
         private readonly MailerInterface $mailer,
         private readonly LoggerInterface $logger,
         private readonly Environment $twig,
+        private readonly UserRepository $userRepository,
         private readonly string $mailFrom = 'noreply@cynadev.fr'
     ) {}
 
@@ -166,14 +168,21 @@ class EmailService
 
     public function sendStockAlertEmail(Product $product): bool
     {
-        // le passer dans le .env
-        $destinataires = 'baertjoseph8@gmail.com, arthur.duval18@gmail.com, theo.gandon9@gmail.com'; 
+        // Récupère tous les utilisateurs avec le rôle ROLE_ADMIN
+        $admins = $this->userRepository->findAdmins();
 
+        if (empty($admins)) {
+            $this->logger->warning('Aucun administrateur trouvé pour envoyer l\'alerte de stock', [
+                'product_id' => $product->getId(),
+                'product_name' => $product->getName()
+            ]);
+            return false;
+        }
 
-        $emailsArray = explode(',', $destinataires);
-
-        // On enlève les espaces vides autour des emails
-        $emailsArray = array_map('trim', $emailsArray);
+        // Récupère les emails des admins
+        $emailsArray = array_map(function (User $admin) {
+            return $admin->getEmail();
+        }, $admins);
 
         $email = (new Email())
             ->from($this->mailFrom)
@@ -187,7 +196,8 @@ class EmailService
             $this->mailer->send($email);
             $this->logger->info('Email d\'alerte de stock envoyé', [
                 'product_id' => $product->getId(),
-                'product_name' => $product->getName()
+                'product_name' => $product->getName(),
+                'admin_count' => count($emailsArray)
             ]);
             return true;
         } catch (TransportExceptionInterface $e) {

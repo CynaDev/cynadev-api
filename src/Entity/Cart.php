@@ -82,4 +82,13 @@ class Cart
         }
         return $this;
     }
+
+    public function getTotalCost(): float
+    {
+    $total = 0.0;
+    foreach ($this->cartItems as $item) {
+        $total += (float) $item->getUnitPrice() * $item->getQuantity();
+    }
+    return $total;
+    }
 }

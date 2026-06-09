@@ -16,6 +16,14 @@ class OrderRepository extends ServiceEntityRepository
         parent::__construct($registry, Order::class);
     }
 
+    public function getOrdersTotalPrice(): float
+    {
+        return (float) $this->createQueryBuilder('o')
+            ->select('SUM(o.totalTtc)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     //    /**
     //     * @return Order[] Returns an array of Order objects
     //     */

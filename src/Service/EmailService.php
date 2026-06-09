@@ -67,6 +67,43 @@ class EmailService
         }
     }
 
+    public function sendAdminTwoFactorCode(User $user, string $code): bool
+    {
+        $emailAddress = $user->getEmail();
+
+        if (!$emailAddress) {
+            $this->logger->warning('Impossible d\'envoyer le mail 2FA admin : email manquant', [
+                'user_id' => $user->getId()
+            ]);
+            return false;
+        }
+
+        $email = (new Email())
+            ->from($this->mailFrom)
+            ->to($emailAddress)
+            ->subject('Code de connexion administrateur - Cynadev')
+            ->html($this->twig->render('emails/AdminTwoFactorCodeEmail.html.twig', [
+                'username' => $user->getUserIdentifier(),
+                'code' => $code,
+            ]));
+
+        try {
+            $this->mailer->send($email);
+            $this->logger->info('Email 2FA admin envoyé', [
+                'email' => $emailAddress,
+                'user_id' => $user->getId(),
+            ]);
+            return true;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('Impossible d\'envoyer le mail 2FA admin', [
+                'email' => $emailAddress,
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
     public function sendOrderConfirmationEmail(User $user, Order $order, array $cartItems = []): bool
     {
         $emailAddress = $user->getEmail();

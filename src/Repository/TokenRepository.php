@@ -75,6 +75,30 @@ class TokenRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function findValidTokenByUserTypeAndMetadata(User $user, string $type, string $metadataKey, string $metadataValue): ?Token
+    {
+        $tokens = $this->createQueryBuilder('t')
+            ->where('t.user = :user')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.isUsed = :false')
+            ->andWhere('t.expiresAt > :now')
+            ->setParameter('user', $user)
+            ->setParameter('type', $type)
+            ->setParameter('false', false)
+            ->setParameter('now', new \DateTime())
+            ->getQuery()
+            ->getResult();
+
+        foreach ($tokens as $token) {
+            $metadata = $token->getMetadata();
+            if (is_array($metadata) && isset($metadata[$metadataKey]) && (string) $metadata[$metadataKey] === $metadataValue) {
+                return $token;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Supprime les tokens expirés (Nettoyage)
      */

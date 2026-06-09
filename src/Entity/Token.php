@@ -15,6 +15,7 @@ class Token
     public const TYPE_EMAIL_VERIFICATION = 'email_verification';
     public const TYPE_PASSWORD_RESET = 'password_reset';
     public const TYPE_REFRESH_TOKEN = 'refresh_token';
+    public const TYPE_ADMIN_2FA = 'admin_2fa';
     
     #[ORM\Id]
     #[ORM\GeneratedValue]

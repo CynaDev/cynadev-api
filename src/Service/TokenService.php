@@ -72,6 +72,11 @@ class TokenService
         return $this->tokenRepository->findValidToken($tokenValue, $type);
     }
 
+    public function findValidTokenByMetadata(User $user, string $type, string $metadataKey, string $metadataValue): ?Token
+    {
+        return $this->tokenRepository->findValidTokenByUserTypeAndMetadata($user, $type, $metadataKey, $metadataValue);
+    }
+
     public function markTokenAsUsed(Token $token): void
     {
         $token->setIsUsed(true);

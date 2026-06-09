@@ -47,6 +47,15 @@ class Contact
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $response = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $responderEmail = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $respondedAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -74,5 +83,38 @@ public function setMessage(string $message): static { $this->message = $message;
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getResponse(): ?string
+    {
+        return $this->response;
+    }
+
+    public function setResponse(?string $response): static
+    {
+        $this->response = $response;
+        return $this;
+    }
+
+    public function getResponderEmail(): ?string
+    {
+        return $this->responderEmail;
+    }
+
+    public function setResponderEmail(?string $responderEmail): static
+    {
+        $this->responderEmail = $responderEmail;
+        return $this;
+    }
+
+    public function getRespondedAt(): ?\DateTimeImmutable
+    {
+        return $this->respondedAt;
+    }
+
+    public function setRespondedAt(?\DateTimeImmutable $respondedAt): static
+    {
+        $this->respondedAt = $respondedAt;
+        return $this;
     }
 }

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réponse Cynadev</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 28px 20px; text-align: center; background-color: #4f39f6;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 20px;">Cynadev</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 32px 30px;">
+                            <h2 style="color: #333333; margin: 0 0 12px 0;">Réponse à votre demande : {{ contact.sujet }}</h2>
+
+                            <p style="color: #666666; margin: 0 0 12px 0;">Bonjour {{ contact.nom }},</p>
+
+                            <h4 style="margin-top: 18px; color: #333333;">Votre demande</h4>
+                            <div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:12px;">
+                                <p style="margin: 0 0 6px 0; color: #333333;"><strong>De :</strong> {{ contact.nom }} &lt;{{ contact.email }}&gt;</p>
+                                <p style="margin: 0 0 6px 0; color: #666666;"><strong>Date :</strong> {{ contact.createdAt ? contact.createdAt|date('d/m/Y H:i') : '' }}</p>
+                                <p style="margin-top:8px; white-space:pre-wrap; color:#444444;">{{ contact.message }}</p>
+                            </div>
+
+                            <h4 style="margin-top: 12px; color: #333333;">Notre réponse</h4>
+                            <div style="background:#ffffff;padding:16px;border-radius:8px;border:1px solid #eee;">
+                                <p style="white-space:pre-wrap; color: #444444;">{{ reply }}</p>
+                                <p style="margin-top:12px;color:#666666;font-size:13px">Envoyé par {{ admin.firstName ?? admin.username }} {{ admin.lastName ?? '' }} &lt;{{ admin.email ?? admin.getEmail() }}&gt;</p>
+                            </div>
+
+                            <p style="margin-top:18px;color:#999999;font-size:13px;">Ce message vous a été envoyé depuis Cynadev. Si vous avez besoin d'aide, répondez simplement à cet email.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 30px; text-align: center; background-color: #343a40;">
+                            <p style="color: #ffffff; font-size: 12px; margin: 0;">© 2026 Cynadev. Tous droits réservés.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

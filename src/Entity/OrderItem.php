@@ -17,7 +17,7 @@ class OrderItem
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['order:read'])]
     private ?Product $product = null;
 
@@ -34,9 +34,25 @@ class OrderItem
     private ?string $price = null; // prix unitaire au moment de la commande
 
     #[ORM\ManyToOne(targetEntity: ProductPlan::class)]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['order:read'])]
     private ?ProductPlan $productPlan = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $productName = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $productSku = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?array $productSnapshot = null; // snapshot complet du produit au moment de la commande
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?array $productPlanSnapshot = null; // snapshot du plan
     public function getId(): ?int
     {
         return $this->id;
@@ -89,6 +105,46 @@ class OrderItem
     public function setProductPlan(?ProductPlan $productPlan): self
     {
         $this->productPlan = $productPlan;
+        return $this;
+    }
+
+    public function getProductName(): ?string
+    {
+        return $this->productName;
+    }
+    public function setProductName(?string $productName): self
+    {
+        $this->productName = $productName;
+        return $this;
+    }
+
+    public function getProductSku(): ?string
+    {
+        return $this->productSku;
+    }
+    public function setProductSku(?string $productSku): self
+    {
+        $this->productSku = $productSku;
+        return $this;
+    }
+
+    public function getProductSnapshot(): ?array
+    {
+        return $this->productSnapshot;
+    }
+    public function setProductSnapshot(?array $productSnapshot): self
+    {
+        $this->productSnapshot = $productSnapshot;
+        return $this;
+    }
+
+    public function getProductPlanSnapshot(): ?array
+    {
+        return $this->productPlanSnapshot;
+    }
+    public function setProductPlanSnapshot(?array $productPlanSnapshot): self
+    {
+        $this->productPlanSnapshot = $productPlanSnapshot;
         return $this;
     }
 }

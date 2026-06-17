@@ -32,6 +32,7 @@ class CartItem
     private ?Cart $cart = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     #[Groups(['cart:items'])]
     private ?ProductPlan $productPlan = null;
 

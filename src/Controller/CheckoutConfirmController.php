@@ -104,6 +104,33 @@ class CheckoutConfirmController extends AbstractController
                 $orderItem->setQuantity($cartItem->getQuantity());
                 $orderItem->setPrice($cartItem->getUnitPrice());
                 $orderItem->setProductPlan($cartItem->getProductPlan());
+                
+                // Capture snapshots
+                $orderItem->setProductName($product->getName());
+                
+                $productSnapshot = [
+                    'id' => $product->getId(),
+                    'name' => $product->getName(),
+                    'description' => $product->getDescription(),
+                    'price' => $product->getPrice(),
+                    'categoryId' => $product->getCategoryId(),
+                    'disponibilite' => $product->getDisponibilite()?->name,
+                ];
+                $orderItem->setProductSnapshot($productSnapshot);
+                
+                $productPlan = $cartItem->getProductPlan();
+                if ($productPlan) {
+                    $productPlanSnapshot = [
+                        'id' => $productPlan->getId(),
+                        'name' => $productPlan->getName(),
+                        'billingCycle' => $productPlan->getBillingCycle(),
+                        'price' => $productPlan->getPrice(),
+                        'stripePriceId' => $productPlan->getStripePriceId(),
+                        'features' => $productPlan->getFeatures(),
+                    ];
+                    $orderItem->setProductPlanSnapshot($productPlanSnapshot);
+                }
+                
                 $order->addOrderItem($orderItem);
                 $this->em->persist($orderItem);
 

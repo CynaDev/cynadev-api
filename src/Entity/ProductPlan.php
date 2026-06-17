@@ -12,13 +12,13 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ProductPlanRepository::class)]
 #[ApiFilter(SearchFilter::class, properties: ['product' => 'exact'])]
-#[ApiResource]
+#[ApiResource(normalizationContext: ['groups' => ['product_plan:read']])]
 class ProductPlan
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['cart:items'])]
+    #[Groups(['product_plan:read','cart:items'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'productPlans')]
@@ -27,21 +27,25 @@ class ProductPlan
     private ?Product $product = null; // C'est cette propriété qui crée la colonne product_id en DB
 
     #[ORM\Column(length: 255)]
-    #[Groups(['cart:items'])]
+    #[Groups(['product_plan:read','cart:items'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['cart:items', 'order:read'])]
+    #[Groups(['product_plan:read','cart:items', 'order:read'])]
     private ?string $billingCycle = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['cart:items'])]
+    #[Groups(['product_plan:read','cart:items'])]
     private ?string $price = null;
 
     //Pour subscription
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['cart:items'])]
+    #[Groups(['product_plan:read','cart:items'])]
     private ?string $stripePriceId = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['product_plan:read','cart:items'])]
+    private ?array $features = null;
 
     public function getStripePriceId(): ?string
     {
@@ -50,6 +54,17 @@ class ProductPlan
     public function setStripePriceId(?string $id): static
     {
         $this->stripePriceId = $id;
+        return $this;
+    }
+
+    public function getFeatures(): ?array
+    {
+        return $this->features;
+    }
+
+    public function setFeatures(?array $features): static
+    {
+        $this->features = $features;
         return $this;
     }
 

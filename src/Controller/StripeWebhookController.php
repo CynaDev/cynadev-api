@@ -146,6 +146,33 @@ class StripeWebhookController
             $orderItem->setProductPlan($productPlan);
             $orderItem->setQuantity($line->quantity ?? 1);
             $orderItem->setPrice((string) ($line->amount / 100));
+            
+            // Capture snapshots
+            $product = $productPlan->getProduct();
+            if ($product) {
+                $orderItem->setProductName($product->getName());
+                
+                $productSnapshot = [
+                    'id' => $product->getId(),
+                    'name' => $product->getName(),
+                    'description' => $product->getDescription(),
+                    'price' => $product->getPrice(),
+                    'categoryId' => $product->getCategoryId(),
+                    'disponibilite' => $product->getDisponibilite()?->name,
+                ];
+                $orderItem->setProductSnapshot($productSnapshot);
+            }
+            
+            $productPlanSnapshot = [
+                'id' => $productPlan->getId(),
+                'name' => $productPlan->getName(),
+                'billingCycle' => $productPlan->getBillingCycle(),
+                'price' => $productPlan->getPrice(),
+                'stripePriceId' => $productPlan->getStripePriceId(),
+                'features' => $productPlan->getFeatures(),
+            ];
+            $orderItem->setProductPlanSnapshot($productPlanSnapshot);
+            
             $order->addOrderItem($orderItem);
             $this->em->persist($orderItem);
         }
@@ -211,6 +238,33 @@ class StripeWebhookController
             $orderItem->setProductPlan($cartItem->getProductPlan());
             $orderItem->setQuantity($cartItem->getQuantity());
             $orderItem->setPrice($cartItem->getUnitPrice());
+            
+            // Capture snapshots
+            $orderItem->setProductName($product->getName());
+            
+            $productSnapshot = [
+                'id' => $product->getId(),
+                'name' => $product->getName(),
+                'description' => $product->getDescription(),
+                'price' => $product->getPrice(),
+                'categoryId' => $product->getCategoryId(),
+                'disponibilite' => $product->getDisponibilite()?->name,
+            ];
+            $orderItem->setProductSnapshot($productSnapshot);
+            
+            $productPlan = $cartItem->getProductPlan();
+            if ($productPlan) {
+                $productPlanSnapshot = [
+                    'id' => $productPlan->getId(),
+                    'name' => $productPlan->getName(),
+                    'billingCycle' => $productPlan->getBillingCycle(),
+                    'price' => $productPlan->getPrice(),
+                    'stripePriceId' => $productPlan->getStripePriceId(),
+                    'features' => $productPlan->getFeatures(),
+                ];
+                $orderItem->setProductPlanSnapshot($productPlanSnapshot);
+            }
+            
             $order->addOrderItem($orderItem);
             $this->em->persist($orderItem);
 

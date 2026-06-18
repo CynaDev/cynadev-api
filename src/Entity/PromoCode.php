@@ -2,15 +2,28 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\PromoCodeRepository;
+use App\State\PromoCodeDeleteProcessor;
+use App\State\PromoCodeProcessor;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use ApiPlatform\Metadata\ApiFilter;
-use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: PromoCodeRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    processor: PromoCodeProcessor::class,
+    operations: [
+        new \ApiPlatform\Metadata\Get(),
+        new \ApiPlatform\Metadata\GetCollection(),
+        new \ApiPlatform\Metadata\Post(processor: PromoCodeProcessor::class),
+        new \ApiPlatform\Metadata\Patch(processor: PromoCodeProcessor::class),
+        new \ApiPlatform\Metadata\Delete(processor: PromoCodeDeleteProcessor::class),
+    ]
+)]
+#[UniqueEntity(fields: ['code'], message: 'Ce code promo existe déjà.')]
 #[ApiFilter(SearchFilter::class, properties: ['code' => 'exact'])]
 class PromoCode
 {
@@ -22,11 +35,15 @@ class PromoCode
     #[ORM\Column(length: 50, unique: true)]
     private ?string $code = null;
 
+    // percent | fixed
     #[ORM\Column(length: 20)]
     private ?string $type = null;
 
     #[ORM\Column(type: 'float')]
     private ?float $value = null;
+
+    #[ORM\Column(length: 3, nullable: true)]
+    private ?string $currency = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $validFrom = null;
@@ -43,7 +60,17 @@ class PromoCode
     #[ORM\Column(options: ['default' => true])]
     private ?bool $isActive = true;
 
-    // --- GETTERS & SETTERS ---
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripeCouponId = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripePromotionCodeId = null;
+
+    #[ORM\Column(length: 20, options: ['default' => 'pending'])]
+    private ?string $stripeSyncStatus = 'pending';
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $stripeSyncError = null;
 
     public function getId(): ?int
     {
@@ -57,7 +84,7 @@ class PromoCode
 
     public function setCode(string $code): static
     {
-        $this->code = strtoupper($code); // Sécurité : on force les majuscules côté serveur aussi !
+        $this->code = strtoupper($code);
         return $this;
     }
 
@@ -68,7 +95,7 @@ class PromoCode
 
     public function setType(string $type): static
     {
-        $this->type = $type;
+        $this->type = strtolower($type);
         return $this;
     }
 
@@ -80,6 +107,17 @@ class PromoCode
     public function setValue(float $value): static
     {
         $this->value = $value;
+        return $this;
+    }
+
+    public function getCurrency(): ?string
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?string $currency): static
+    {
+        $this->currency = $currency ? strtolower($currency) : null;
         return $this;
     }
 
@@ -135,6 +173,50 @@ class PromoCode
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function getStripeCouponId(): ?string
+    {
+        return $this->stripeCouponId;
+    }
+
+    public function setStripeCouponId(?string $stripeCouponId): static
+    {
+        $this->stripeCouponId = $stripeCouponId;
+        return $this;
+    }
+
+    public function getStripePromotionCodeId(): ?string
+    {
+        return $this->stripePromotionCodeId;
+    }
+
+    public function setStripePromotionCodeId(?string $stripePromotionCodeId): static
+    {
+        $this->stripePromotionCodeId = $stripePromotionCodeId;
+        return $this;
+    }
+
+    public function getStripeSyncStatus(): ?string
+    {
+        return $this->stripeSyncStatus;
+    }
+
+    public function setStripeSyncStatus(string $stripeSyncStatus): static
+    {
+        $this->stripeSyncStatus = $stripeSyncStatus;
+        return $this;
+    }
+
+    public function getStripeSyncError(): ?string
+    {
+        return $this->stripeSyncError;
+    }
+
+    public function setStripeSyncError(?string $stripeSyncError): static
+    {
+        $this->stripeSyncError = $stripeSyncError;
         return $this;
     }
 }

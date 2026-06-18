@@ -3,11 +3,15 @@
 namespace App\MessageHandler;
 
 use App\Entity\Product;
+use App\Message\CreateStripePriceMessage;
 use App\Message\CreateStripeProductMessage;
 use App\Service\StripeProductService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DispatchAfterCurrentBusStamp;
 
 #[AsMessageHandler]
 final class CreateStripeProductMessageHandler
@@ -15,6 +19,7 @@ final class CreateStripeProductMessageHandler
     public function __construct(
         private EntityManagerInterface $em,
         private StripeProductService $stripeProductService,
+        private MessageBusInterface $messageBus,
         private LoggerInterface $logger,
     ) {
     }
@@ -38,7 +43,9 @@ final class CreateStripeProductMessageHandler
 
         if (null !== $product->getStripeProductId()) {
             $product->setStripeSyncStatus('synced');
+            $product->setStripeSyncError(null);
             $this->em->flush();
+
             return;
         }
 
@@ -52,6 +59,15 @@ final class CreateStripeProductMessageHandler
         $product->setStripeSyncError(null);
 
         $this->em->flush();
+
+        foreach ($product->getProductPlans() as $plan) {
+            if (null === $plan->getStripePriceId()) {
+                $this->messageBus->dispatch(
+                    (new Envelope(new CreateStripePriceMessage($plan->getId())))
+                        ->with(new DispatchAfterCurrentBusStamp())
+                );
+            }
+        }
 
         $this->logger->info('Stripe product created and local product updated', [
             'name' => $message->getName(),

@@ -4,11 +4,11 @@ namespace App\Config;
 
 enum Disponibilite_enums: string
 {
-    case Dipsonible = 'Disponible';
+    case Disponible = 'Disponible';
     case Maintenance = 'Maintenance';
     case Indisponible = 'Indisponible';
     public static function default(): self
     {
-        return self::Dipsonible;  // Valeur par défaut
+        return self::Disponible;  // Valeur par défaut
     }
 }

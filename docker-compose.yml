@@ -11,6 +11,8 @@ services:
     environment:
       APP_ENV: prod
       APP_DEBUG: 0
+    volumes:
+      - /opt/dokploy/volumes/cynadev-api/public/images:/var/www/html/public/images
 
   worker:
     build:

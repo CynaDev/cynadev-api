@@ -15,7 +15,6 @@ RUN apk add --no-cache \
     nginx \
     openssl
 
-# Extensions existantes + mbstring + gd (requis par DomPDF)
 RUN docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -43,6 +42,7 @@ RUN php bin/console assets:install public --env=prod || true
 RUN php bin/console asset-map:compile --env=prod || true
 RUN php bin/console cache:clear --env=prod --no-debug || true
 RUN php bin/console cache:warmup --env=prod --no-debug || true
+RUN php bin/console messenger:setup-transports --env=prod || true
 
 RUN if [ ! -f config/jwt/private.pem ]; then \
       php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; \
@@ -54,4 +54,4 @@ COPY nginx.conf /etc/nginx/http.d/default.conf
 
 EXPOSE 80
 
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]    

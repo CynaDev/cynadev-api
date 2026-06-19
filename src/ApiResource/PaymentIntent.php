@@ -16,7 +16,12 @@ use App\State\PaymentIntentProcessor;
 )]
 class PaymentIntent
 {
-    public int $amount;   
+    public int $amount;
     public string $currency = 'eur';
     public ?string $clientSecret = null;
+
+    // ← AJOUTE
+    public ?string $promoCode = null;
+    public ?string $customerId = null;
+    public ?string $stripePriceId = null;
 }

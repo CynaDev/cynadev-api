@@ -17,12 +17,13 @@ class CheckoutSessionProcessor implements ProcessorInterface
         private UserRepository $userRepository,
         private ProductPlanRepository $productPlanRepository,
         private EntityManagerInterface $em,
-    ) {}
+    ) {
+    }
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): CheckoutSessionResource
     {
         $lineItems = array_map(fn($item) => [
-            'price'    => $item['stripePriceId'],
+            'price' => $item['stripePriceId'],
             'quantity' => $item['quantity'],
         ], $data->items);
 
@@ -31,11 +32,11 @@ class CheckoutSessionProcessor implements ProcessorInterface
 
         $params = [
             'payment_method_types' => ['card'],
-            'line_items'           => $lineItems,
-            'mode'                 => 'subscription',
-            'success_url'          => $data->successUrl,
-            'cancel_url'           => $data->cancelUrl,
-            'metadata'             => [
+            'line_items' => $lineItems,
+            'mode' => 'subscription',
+            'success_url' => $data->successUrl,
+            'cancel_url' => $data->cancelUrl,
+            'metadata' => [
                 'user_id' => $data->userId,
                 'cart_id' => $data->cartId,
             ],
@@ -46,6 +47,20 @@ class CheckoutSessionProcessor implements ProcessorInterface
             $params['customer'] = $user->getStripeCustomerId();
         } elseif ($data->customerEmail) {
             $params['customer_email'] = $data->customerEmail;
+        }
+
+        if (!empty($data->promoCode)) {
+            $promoCodes = $this->stripe->promotionCodes->all([
+                'code' => $data->promoCode,
+                'limit' => 1,
+            ]);
+            if (!empty($promoCodes->data)) {
+                $params['discounts'] = [
+                    ['promotion_code' => $promoCodes->data[0]->id]
+                ];
+            }
+        } else {
+            $params['allow_promotion_codes'] = true;
         }
 
         $session = $this->stripe->checkout->sessions->create($params);

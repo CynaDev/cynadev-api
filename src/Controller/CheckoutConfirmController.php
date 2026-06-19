@@ -33,8 +33,22 @@ class CheckoutConfirmController extends AbstractController
     public function __invoke(string $sessionId): JsonResponse
     {
         $session = $this->stripe->checkout->sessions->retrieve($sessionId, [
-            'expand' => ['subscription'], // ← AJOUTE pour récupérer la subscription
+            'expand' => [
+                'subscription',
+                'total_details.breakdown.discounts',
+                'discounts',
+            ],
         ]);
+
+        $promoCode = null;
+        $discountAmount = 0.0;
+
+        if (!empty($session->total_details?->breakdown?->discounts)) {
+            foreach ($session->total_details->breakdown->discounts as $discount) {
+                $promoCode = $discount->discount?->promotion_code?->code ?? null;
+                $discountAmount += ($discount->amount / 100); // Stripe retourne en centimes
+            }
+        }
 
         // ← Pour subscription, le statut est 'unpaid' au moment du confirm
         // On vérifie différemment selon le mode
@@ -104,10 +118,10 @@ class CheckoutConfirmController extends AbstractController
                 $orderItem->setQuantity($cartItem->getQuantity());
                 $orderItem->setPrice($cartItem->getUnitPrice());
                 $orderItem->setProductPlan($cartItem->getProductPlan());
-                
+
                 // Capture snapshots
                 $orderItem->setProductName($product->getName());
-                
+
                 $productSnapshot = [
                     'id' => $product->getId(),
                     'name' => $product->getName(),
@@ -117,7 +131,7 @@ class CheckoutConfirmController extends AbstractController
                     'disponibilite' => $product->getDisponibilite()?->name,
                 ];
                 $orderItem->setProductSnapshot($productSnapshot);
-                
+
                 $productPlan = $cartItem->getProductPlan();
                 if ($productPlan) {
                     $productPlanSnapshot = [
@@ -130,7 +144,7 @@ class CheckoutConfirmController extends AbstractController
                     ];
                     $orderItem->setProductPlanSnapshot($productPlanSnapshot);
                 }
-                
+
                 $order->addOrderItem($orderItem);
                 $this->em->persist($orderItem);
 
@@ -140,6 +154,17 @@ class CheckoutConfirmController extends AbstractController
                     $stock->setQuantite($newQty);
                 }
             }
+        }
+
+        if ($promoCode) {
+            $order->setPromoCode($promoCode);
+            $order->setDiscountAmount((string) $discountAmount);
+
+            // Recalcule les totaux avec la remise appliquée
+            $totalTtc = max(0, $totalTtc - $discountAmount);
+            $totalHt = round($totalTtc / 1.2, 2);
+            $order->setTotalHt((string) $totalHt);
+            $order->setTotalTtc((string) $totalTtc);
         }
 
         $this->em->persist($order);

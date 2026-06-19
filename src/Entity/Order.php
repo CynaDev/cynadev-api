@@ -75,6 +75,34 @@ class Order
     #[Groups(['order:read'])]
     private ?\DateTime $subscriptionEndsAt = null;
 
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $promoCode = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $discountAmount = null;
+
+    public function getPromoCode(): ?string
+    {
+        return $this->promoCode;
+    }
+    public function setPromoCode(?string $promoCode): self
+    {
+        $this->promoCode = $promoCode;
+        return $this;
+    }
+
+    public function getDiscountAmount(): ?string
+    {
+        return $this->discountAmount;
+    }
+    public function setDiscountAmount(?string $discountAmount): self
+    {
+        $this->discountAmount = $discountAmount;
+        return $this;
+    }
+
     public function getSubscriptionEndsAt(): ?\DateTime
     {
         return $this->subscriptionEndsAt;

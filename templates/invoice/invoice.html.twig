@@ -61,7 +61,6 @@
     .badge-Expediee   { background: #dbeafe; color: #1d4ed8; }
     .badge-Annulee    { background: #fee2e2; color: #dc2626; }
 
-    /* Badge cycle — même style que l'email */
     .badge-cycle {
       background-color: #ede9fe;
       color: #4f39f6;
@@ -69,6 +68,16 @@
       padding: 2px 8px;
       font-size: 11px;
       font-weight: 600;
+    }
+
+    .badge-promo {
+      background-color: #dcfce7;
+      color: #15803d;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
@@ -82,11 +91,13 @@
     .text-right { text-align: right; }
     .text-center { text-align: center; }
 
-    .totals { margin-left: auto; width: 260px; }
+    .totals { margin-left: auto; width: 300px; }
     .totals table { margin-bottom: 0; }
     .totals td { padding: 6px 12px; border: none; }
-    .totals tr:last-child { background: #4f39f6; color: white; font-weight: bold; font-size: 14px; }
-    .totals tr:last-child td { padding: 10px 12px; }
+    .totals tr.discount { color: #15803d; font-weight: 600; }
+    .totals tr.discount td { background: #f0fdf4; }
+    .totals tr.total-ttc { background: #4f39f6; color: white; font-weight: bold; font-size: 14px; }
+    .totals tr.total-ttc td { padding: 10px 12px; }
 
     .footer {
       margin-top: 48px;
@@ -95,6 +106,33 @@
       text-align: center;
       font-size: 11px;
       color: #999;
+      line-height: 1.8;
+    }
+
+    .rgpd-block {
+      margin-top: 32px;
+      padding: 16px;
+      background: #f9f7ff;
+      border-left: 3px solid #4f39f6;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #666;
+      line-height: 1.7;
+    }
+
+    .rgpd-block strong {
+      color: #4f39f6;
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .legal-block {
+      margin-top: 16px;
+      font-size: 10px;
+      color: #999;
+      line-height: 1.7;
+      text-align: center;
     }
   </style>
 </head>
@@ -105,6 +143,7 @@
     <div>
       <p class="company-name">Cyna</p>
       <p style="color:#666; font-size:12px; margin-top:4px;">contact@cyna.fr</p>
+      <p style="color:#666; font-size:12px;">www.cyna.fr</p>
     </div>
     <div class="invoice-title">
       <h1>FACTURE</h1>
@@ -158,7 +197,7 @@
       {% for item in order.orderItems %}
       <tr>
         <td>{{ item.product.name }}</td>
-          <td class="text-center">
+        <td class="text-center">
           {% if item.productPlan is defined and item.productPlan %}
             <span class="badge-cycle">{{ item.productPlan.billingCycle }}</span>
           {% else %}
@@ -179,26 +218,66 @@
   <div class="totals">
     <table>
       <tr>
-        <td>Total HT</td>
+        <td>Sous-total HT</td>
         <td class="text-right">{{ order.totalHt|number_format(2, ',', ' ') }} €</td>
       </tr>
+
+      {# ← Ligne code promo si applicable #}
+      {% if order.promoCode %}
+      <tr class="discount">
+        <td>
+          Code promo&nbsp;
+          <span class="badge-promo">{{ order.promoCode }}</span>
+        </td>
+        <td class="text-right">- {{ order.discountAmount|number_format(2, ',', ' ') }} €</td>
+      </tr>
+      {% endif %}
+
       <tr>
         <td>TVA (20%)</td>
         <td class="text-right">
           {{ (order.totalTtc - order.totalHt)|number_format(2, ',', ' ') }} €
         </td>
       </tr>
-      <tr>
+      <tr class="total-ttc">
         <td>Total TTC</td>
         <td class="text-right">{{ order.totalTtc|number_format(2, ',', ' ') }} €</td>
       </tr>
     </table>
   </div>
 
+  <!-- Bloc RGPD / CNIL (obligatoire sur toute facture comportant des données personnelles) -->
+  <div class="rgpd-block">
+    <strong>Informations relatives à vos données personnelles (RGPD — Règlement UE 2016/679)</strong>
+    Les données personnelles figurant sur cette facture (nom, prénom, adresse e-mail) sont collectées
+    et traitées par <strong>Cyna</strong> en qualité de responsable de traitement, aux fins d'exécution
+    du contrat et d'obligations légales de facturation (art. L123-22 du Code de commerce — conservation
+    10 ans). Elles ne sont pas transmises à des tiers à des fins commerciales. Conformément au RGPD,
+    vous disposez d'un droit d'accès, de rectification, d'effacement (dans les limites légales),
+    de limitation et de portabilité de vos données. Pour exercer ces droits, contactez-nous à :
+    <strong>dpo@cyna.fr</strong>. Vous pouvez également introduire une réclamation auprès de la
+    <strong>CNIL</strong> (www.cnil.fr).
+  </div>
+
+  <!-- Mentions légales obligatoires (facture française) -->
+  <div class="legal-block">
+    <p>
+      Cyna — SAS au capital de [X] € — SIRET : [XXX XXX XXX XXXXX] — TVA intracommunautaire : FR[XX XXXXXXXXX]
+    </p>
+    <p>
+      Siège social : [Adresse complète] — RCS [Ville] [Numéro]
+    </p>
+    <p>
+      En cas de retard de paiement, une pénalité de 3× le taux d'intérêt légal sera appliquée
+      (art. L441-10 C. com.), ainsi qu'une indemnité forfaitaire de recouvrement de 40 €.
+    </p>
+  </div>
+
   <!-- Footer -->
   <div class="footer">
     <p>Cyna — Merci pour votre confiance.</p>
     <p>Ce document est généré automatiquement et constitue votre facture officielle.</p>
+    <p>Conservez ce document — durée légale de conservation : 10 ans (art. L123-22 C. com.)</p>
   </div>
 
 </body>

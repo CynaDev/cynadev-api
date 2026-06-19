@@ -27,4 +27,5 @@ class CheckoutSession
     public ?int $userId = null;
     public ?int $cartId = null;
     public ?string $customerEmail = null;
+    public ?string $promoCode = null;
 }

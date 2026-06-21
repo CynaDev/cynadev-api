@@ -21,6 +21,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use App\State\ProductDeleteProcessor;
+use App\State\ProductUpdateProcessor;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
@@ -28,7 +29,7 @@ use App\State\ProductDeleteProcessor;
         new GetCollection(),
         new Get(),
         new Post(processor: ProductProcessor::class),
-        new Patch(),
+        new Patch(processor: ProductUpdateProcessor::class),
         new Delete(processor: ProductDeleteProcessor::class),
     ],
     paginationEnabled: true,

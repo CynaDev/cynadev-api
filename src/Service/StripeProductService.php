@@ -9,8 +9,7 @@ final class StripeProductService
 {
     public function __construct(
         private StripeClient $stripeClient,
-    ) {
-    }
+    ) {}
 
     public function createProduct(Product $product): string
     {
@@ -41,5 +40,29 @@ final class StripeProductService
         $this->stripeClient->products->update($stripeProductId, [
             'active' => false,
         ]);
+    }
+
+    public function updateProductByName(string $oldName, ?string $newName, ?string $description): string
+    {
+        $results = $this->stripeClient->products->search([
+            'query' => sprintf('name:\'%s\'', str_replace('\'', '\\\'', $oldName)),
+            'limit' => 1,
+        ]);
+
+        $stripeProduct = $results->data[0] ?? null;
+
+        if (null === $stripeProduct) {
+            throw new \RuntimeException(sprintf(
+                'Aucun produit Stripe trouvé pour le nom "%s".',
+                $oldName
+            ));
+        }
+
+        $updated = $this->stripeClient->products->update($stripeProduct->id, array_filter([
+            'name' => $newName,
+            'description' => $description,
+        ], static fn ($value) => null !== $value));
+
+        return $updated->id;
     }
 }

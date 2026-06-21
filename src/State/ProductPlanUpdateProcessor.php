@@ -38,8 +38,11 @@ final class ProductPlanUpdateProcessor implements ProcessorInterface
         /** @var ProductPlan|null $previousData */
         $previousData = $context['previous_data'] ?? null;
 
+        $mustCreatePrice = null === $data->getStripePriceId();
+
         $mustRecreatePrice =
             $previousData instanceof ProductPlan
+            && null !== $previousData->getStripePriceId()
             && (
                 $previousData->getPrice() !== $data->getPrice()
                 || $previousData->getBillingCycle() !== $data->getBillingCycle()
@@ -53,7 +56,16 @@ final class ProductPlanUpdateProcessor implements ProcessorInterface
         $productPlan = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
 
         try {
-            if ($mustRecreatePrice) {
+            if ($mustCreatePrice) {
+                $newStripePriceId = $this->stripePriceService->createRecurringPrice($productPlan);
+
+                $productPlan->setStripePriceId($newStripePriceId);
+
+                $this->logger->info('Stripe price created after ProductPlan update', [
+                    'product_plan_id' => $productPlan->getId(),
+                    'stripe_price_id' => $newStripePriceId,
+                ]);
+            } elseif ($mustRecreatePrice) {
                 $newStripePriceId = $this->stripePriceService->recreateRecurringPrice(
                     $productPlan,
                     $previousData?->getStripePriceId(),

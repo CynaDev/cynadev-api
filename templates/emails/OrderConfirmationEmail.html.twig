@@ -10,14 +10,12 @@
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 
-                    <!-- Header -->
                     <tr>
                         <td style="padding: 40px 30px; text-align: center; background-color: #4f39f6;">
                             <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Cynadev</h1>
                         </td>
                     </tr>
 
-                    <!-- Body -->
                     <tr>
                         <td style="padding: 40px 30px;">
                             <h2 style="color: #333333; margin: 0 0 10px 0;">Merci pour votre commande !</h2>
@@ -25,16 +23,21 @@
                                 Bonjour <strong>{{ username }}</strong>, votre paiement a bien été confirmé.
                             </p>
 
-                            <!-- Order header -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 24px;">
                                 <tr>
-                                    <td style="padding: 14px 20px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+                                    <td colspan="5" style="padding: 14px 20px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
                                         <strong style="color: #333333;">Commande #{{ orderId }}</strong>
                                         <span style="color: #999999; font-size: 13px; margin-left: 10px;">{{ date }}</span>
+                                        {% if promoCode %}
+                                            <div style="margin-top: 8px;">
+                                                <span style="display:inline-block; background:#ecfdf3; color:#15803d; border:1px solid #bbf7d0; border-radius:6px; padding:4px 10px; font-size:12px; font-weight:bold;">
+                                                    Code promo appliqué : {{ promoCode }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
                                     </td>
                                 </tr>
 
-                                <!-- Column headers -->
                                 <tr style="background-color: #f0f0f0;">
                                     <td style="padding: 10px 20px; font-size: 12px; color: #888888; font-weight: bold; border-bottom: 1px solid #e9ecef;">SERVICE</td>
                                     <td style="padding: 10px 12px; font-size: 12px; color: #888888; font-weight: bold; border-bottom: 1px solid #e9ecef; text-align: center;">CYCLE</td>
@@ -43,30 +46,44 @@
                                     <td style="padding: 10px 20px; font-size: 12px; color: #888888; font-weight: bold; border-bottom: 1px solid #e9ecef; text-align: right;">TOTAL HT</td>
                                 </tr>
 
-                                <!-- Lines -->
                                 {% for line in lines %}
-                                <tr>
-                                    <td style="padding: 12px 20px; color: #333333; border-bottom: 1px solid #f0f0f0;">{{ line.name }}</td>
-                                    <td style="padding: 12px 12px; color: #666666; font-size: 13px; border-bottom: 1px solid #f0f0f0; text-align: center;">
-                                        <span style="background-color: #ede9fe; color: #4f39f6; border-radius: 4px; padding: 2px 8px; font-size: 12px;">{{ line.cycle }}</span>
-                                    </td>
-                                    <td style="padding: 12px 12px; color: #666666; border-bottom: 1px solid #f0f0f0; text-align: center;">{{ line.quantity }}</td>
-                                    <td style="padding: 12px 12px; color: #666666; border-bottom: 1px solid #f0f0f0; text-align: right;">{{ line.unitHt }} €</td>
-                                    <td style="padding: 12px 20px; color: #333333; font-weight: bold; border-bottom: 1px solid #f0f0f0; text-align: right;">{{ line.totalHt }} €</td>
-                                </tr>
+                                    <tr>
+                                        <td style="padding: 12px 20px; color: #333333; border-bottom: 1px solid #f0f0f0;">{{ line.name }}</td>
+                                        <td style="padding: 12px 12px; color: #666666; font-size: 13px; border-bottom: 1px solid #f0f0f0; text-align: center;">
+                                            <span style="background-color: #ede9fe; color: #4f39f6; border-radius: 4px; padding: 2px 8px; font-size: 12px;">{{ line.cycle }}</span>
+                                        </td>
+                                        <td style="padding: 12px 12px; color: #666666; border-bottom: 1px solid #f0f0f0; text-align: center;">{{ line.quantity }}</td>
+                                        <td style="padding: 12px 12px; color: #666666; border-bottom: 1px solid #f0f0f0; text-align: right;">{{ line.unitHt }} €</td>
+                                        <td style="padding: 12px 20px; color: #333333; font-weight: bold; border-bottom: 1px solid #f0f0f0; text-align: right;">{{ line.totalHt }} €</td>
+                                    </tr>
                                 {% endfor %}
 
-                                <!-- Totals -->
+                                <tr>
+                                    <td colspan="4" style="padding: 10px 20px; text-align: right; color: #666666; font-size: 13px;">Sous-total TTC</td>
+                                    <td style="padding: 10px 20px; text-align: right; color: #333333; font-weight: bold;">{{ subtotalTtc }} €</td>
+                                </tr>
+
+                                {% if discountTtcFloat > 0 %}
+                                    <tr>
+                                        <td colspan="4" style="padding: 4px 20px; text-align: right; color: #15803d; font-size: 13px; font-weight: bold;">
+                                            Réduction{% if promoCode %} ({{ promoCode }}){% endif %}
+                                        </td>
+                                        <td style="padding: 4px 20px; text-align: right; color: #15803d; font-size: 13px; font-weight: bold;">
+                                            -{{ discountTtc }} €
+                                        </td>
+                                    </tr>
+                                {% endif %}
+
                                 <tr>
                                     <td colspan="4" style="padding: 10px 20px; text-align: right; color: #666666; font-size: 13px;">Total HT</td>
                                     <td style="padding: 10px 20px; text-align: right; color: #333333; font-weight: bold;">{{ totalHt }} €</td>
                                 </tr>
                                 <tr>
                                     <td colspan="4" style="padding: 4px 20px; text-align: right; color: #666666; font-size: 13px;">TVA (20 %)</td>
-                                    <td style="padding: 4px 20px; text-align: right; color: #666666; font-size: 13px;">incluse</td>
+                                    <td style="padding: 4px 20px; text-align: right; color: #666666; font-size: 13px;">{{ tva }} €</td>
                                 </tr>
                                 <tr style="background-color: #f8f9fa;">
-                                    <td colspan="4" style="padding: 12px 20px; text-align: right; color: #333333; font-weight: bold;">Total TTC</td>
+                                    <td colspan="4" style="padding: 12px 20px; text-align: right; color: #333333; font-weight: bold;">Total TTC payé</td>
                                     <td style="padding: 12px 20px; text-align: right; color: #4f39f6; font-size: 16px; font-weight: bold;">{{ totalTtc }} €</td>
                                 </tr>
                             </table>
@@ -77,7 +94,6 @@
                         </td>
                     </tr>
 
-                    <!-- Footer -->
                     <tr>
                         <td style="padding: 20px 30px; text-align: center; background-color: #343a40;">
                             <p style="color: #ffffff; font-size: 12px; margin: 0;">

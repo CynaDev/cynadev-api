@@ -1,9 +1,10 @@
 <?php
-// api/src/Service/EmailService.php
 
 namespace App\Service;
 
+use App\Entity\Contact;
 use App\Entity\Order;
+use App\Entity\Product;
 use App\Entity\Token;
 use App\Entity\User;
 use App\Repository\UserRepository;
@@ -12,9 +13,6 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Twig\Environment;
-use App\Entity\Product;
-use App\Entity\Contact;
-
 
 class EmailService
 {
@@ -122,20 +120,35 @@ class EmailService
         }
 
         $lines = array_map(function ($item) {
-            $plan    = $item->getProductPlan();
-            $name    = $plan?->getProduct()?->getName() ?? 'Produit';
-            $cycle   = $plan?->getBillingCycle() === 'annuel' ? 'Annuel' : 'Mensuel';
-            $unitHt  = round((float) $item->getUnitPrice() / 1.2, 2);
+            $plan = $item->getProductPlan();
+            $product = $plan?->getProduct();
+
+            $name = $product?->getName() ?? 'Produit';
+            $rawCycle = $plan?->getBillingCycle();
+            $cycle = match ($rawCycle) {
+                'annuel' => 'Annuel',
+                'mensuel' => 'Mensuel',
+                default => '—',
+            };
+
+            $unitTtc = (float) $item->getUnitPrice();
+            $unitHt = round($unitTtc / 1.2, 2);
             $totalHt = round($unitHt * $item->getQuantity(), 2);
 
             return [
-                'name'     => $name,
-                'cycle'    => $cycle,
+                'name' => $name,
+                'cycle' => $cycle,
                 'quantity' => $item->getQuantity(),
-                'unitHt'   => number_format($unitHt, 2, ',', ' '),
-                'totalHt'  => number_format($totalHt, 2, ',', ' '),
+                'unitHt' => number_format($unitHt, 2, ',', ' '),
+                'totalHt' => number_format($totalHt, 2, ',', ' '),
             ];
         }, $cartItems);
+
+        $subtotalTtc = (float) ($order->getSubtotalTtc() ?? $order->getTotalTtc() ?? 0);
+        $discountTtc = (float) ($order->getDiscountTtc() ?? 0);
+        $totalHt = (float) ($order->getTotalHt() ?? 0);
+        $totalTtc = (float) ($order->getTotalTtc() ?? 0);
+        $tva = round($totalTtc - $totalHt, 2);
 
         $email = (new Email())
             ->from($this->mailFrom)
@@ -143,25 +156,30 @@ class EmailService
             ->subject('Confirmation de votre commande #' . $order->getId() . ' - Cynadev')
             ->html($this->twig->render('emails/OrderConfirmationEmail.html.twig', [
                 'username' => $user->getFirstName() ?: $emailAddress,
-                'orderId'  => $order->getId(),
-                'date'     => $order->getDateCommande()?->format('d/m/Y'),
-                'lines'    => $lines,
-                'totalHt'  => number_format((float) $order->getTotalHt(), 2, ',', ' '),
-                'totalTtc' => number_format((float) $order->getTotalTtc(), 2, ',', ' '),
+                'orderId' => $order->getId(),
+                'date' => $order->getDateCommande()?->format('d/m/Y'),
+                'lines' => $lines,
+                'subtotalTtc' => number_format($subtotalTtc, 2, ',', ' '),
+                'discountTtc' => number_format($discountTtc, 2, ',', ' '),
+                'discountTtcFloat' => $discountTtc,
+                'promoCode' => $order->getPromoCode(),
+                'totalHt' => number_format($totalHt, 2, ',', ' '),
+                'totalTtc' => number_format($totalTtc, 2, ',', ' '),
+                'tva' => number_format($tva, 2, ',', ' '),
             ]));
 
         try {
             $this->mailer->send($email);
             $this->logger->info('Email de confirmation de commande envoyé', [
-                'email'    => $emailAddress,
+                'email' => $emailAddress,
                 'order_id' => $order->getId(),
             ]);
             return true;
         } catch (TransportExceptionInterface $e) {
             $this->logger->error('Impossible d\'envoyer le mail de confirmation', [
-                'email'    => $emailAddress,
+                'email' => $emailAddress,
                 'order_id' => $order->getId(),
-                'error'    => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             return false;
         }
@@ -169,7 +187,6 @@ class EmailService
 
     public function sendStockAlertEmail(Product $product): bool
     {
-        // Récupère tous les utilisateurs avec le rôle ROLE_ADMIN
         $admins = $this->userRepository->findAdmins();
 
         if (empty($admins)) {
@@ -180,7 +197,6 @@ class EmailService
             return false;
         }
 
-        // Récupère les emails des admins
         $emailsArray = array_map(function (User $admin) {
             return $admin->getEmail();
         }, $admins);

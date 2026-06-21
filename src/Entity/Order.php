@@ -1,18 +1,19 @@
 <?php
+
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\GetCollection;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
-use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Metadata\Post;
 use App\Config\Statuses_enums;
 use App\Repository\OrderRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -49,11 +50,35 @@ class Order
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['order:read', 'order:write'])]
+    private ?string $subtotalTtc = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
+    #[Groups(['order:read', 'order:write'])]
+    private ?string $discountTtc = '0.00';
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['order:read', 'order:write'])]
     private ?string $totalHt = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['order:read', 'order:write'])]
     private ?string $totalTtc = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $promoCode = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $stripePromotionCodeId = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $stripeCouponId = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $currency = null;
 
     #[ORM\Column(enumType: Statuses_enums::class)]
     #[Groups(['order:read', 'order:write'])]
@@ -75,39 +100,9 @@ class Order
     #[Groups(['order:read'])]
     private ?\DateTime $subscriptionEndsAt = null;
 
-    public function getSubscriptionEndsAt(): ?\DateTime
-    {
-        return $this->subscriptionEndsAt;
-    }
-    public function setSubscriptionEndsAt(?\DateTime $d): self
-    {
-        $this->subscriptionEndsAt = $d;
-        return $this;
-    }
-
-    public function isCancelAtPeriodEnd(): bool
-    {
-        return $this->cancelAtPeriodEnd;
-    }
-    public function setCancelAtPeriodEnd(bool $v): self
-    {
-        $this->cancelAtPeriodEnd = $v;
-        return $this;
-    }
-
-    public function getStripeSubscriptionId(): ?string
-    {
-        return $this->stripeSubscriptionId;
-    }
-    public function setStripeSubscriptionId(?string $id): self
-    {
-        $this->stripeSubscriptionId = $id;
-        return $this;
-    }
-
     public function __construct()
     {
-        $this->orderItems = new ArrayCollection(); // ← corrigé (était $this->products)
+        $this->orderItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -119,9 +114,32 @@ class Order
     {
         return $this->user;
     }
+
     public function setUser(?User $user): self
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function getSubtotalTtc(): ?string
+    {
+        return $this->subtotalTtc;
+    }
+
+    public function setSubtotalTtc(string $subtotalTtc): self
+    {
+        $this->subtotalTtc = $subtotalTtc;
+        return $this;
+    }
+
+    public function getDiscountTtc(): ?string
+    {
+        return $this->discountTtc;
+    }
+
+    public function setDiscountTtc(string $discountTtc): self
+    {
+        $this->discountTtc = $discountTtc;
         return $this;
     }
 
@@ -129,6 +147,7 @@ class Order
     {
         return $this->totalHt;
     }
+
     public function setTotalHt(string $totalHt): self
     {
         $this->totalHt = $totalHt;
@@ -139,9 +158,54 @@ class Order
     {
         return $this->totalTtc;
     }
+
     public function setTotalTtc(string $totalTtc): self
     {
         $this->totalTtc = $totalTtc;
+        return $this;
+    }
+
+    public function getPromoCode(): ?string
+    {
+        return $this->promoCode;
+    }
+
+    public function setPromoCode(?string $promoCode): self
+    {
+        $this->promoCode = $promoCode;
+        return $this;
+    }
+
+    public function getStripePromotionCodeId(): ?string
+    {
+        return $this->stripePromotionCodeId;
+    }
+
+    public function setStripePromotionCodeId(?string $stripePromotionCodeId): self
+    {
+        $this->stripePromotionCodeId = $stripePromotionCodeId;
+        return $this;
+    }
+
+    public function getStripeCouponId(): ?string
+    {
+        return $this->stripeCouponId;
+    }
+
+    public function setStripeCouponId(?string $stripeCouponId): self
+    {
+        $this->stripeCouponId = $stripeCouponId;
+        return $this;
+    }
+
+    public function getCurrency(): ?string
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?string $currency): self
+    {
+        $this->currency = $currency;
         return $this;
     }
 
@@ -149,6 +213,7 @@ class Order
     {
         return $this->status;
     }
+
     public function setStatus(Statuses_enums $status): self
     {
         $this->status = $status;
@@ -159,9 +224,43 @@ class Order
     {
         return $this->dateCommande;
     }
+
     public function setDateCommande(?\DateTime $dateCommande): self
     {
         $this->dateCommande = $dateCommande;
+        return $this;
+    }
+
+    public function getStripeSubscriptionId(): ?string
+    {
+        return $this->stripeSubscriptionId;
+    }
+
+    public function setStripeSubscriptionId(?string $id): self
+    {
+        $this->stripeSubscriptionId = $id;
+        return $this;
+    }
+
+    public function isCancelAtPeriodEnd(): bool
+    {
+        return $this->cancelAtPeriodEnd;
+    }
+
+    public function setCancelAtPeriodEnd(bool $v): self
+    {
+        $this->cancelAtPeriodEnd = $v;
+        return $this;
+    }
+
+    public function getSubscriptionEndsAt(): ?\DateTime
+    {
+        return $this->subscriptionEndsAt;
+    }
+
+    public function setSubscriptionEndsAt(?\DateTime $d): self
+    {
+        $this->subscriptionEndsAt = $d;
         return $this;
     }
 
@@ -177,6 +276,7 @@ class Order
             $this->orderItems->add($orderItem);
             $orderItem->setOrder($this);
         }
+
         return $this;
     }
 
@@ -187,6 +287,7 @@ class Order
                 $orderItem->setOrder(null);
             }
         }
+
         return $this;
     }
 }

@@ -32,10 +32,10 @@ class PaymentConfirmController extends AbstractController
     #[Route('/api/payment/confirm', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {
-        $data            = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true);
         $paymentIntentId = $data['paymentIntentId'] ?? null;
-        $cartId          = $data['cartId'] ?? null;
-        $userId          = $data['userId'] ?? null;
+        $cartId = $data['cartId'] ?? null;
+        $userId = $data['userId'] ?? null;
 
         if (!$paymentIntentId) {
             return new JsonResponse(['error' => 'PaymentIntent manquant.'], 400);
@@ -59,30 +59,36 @@ class PaymentConfirmController extends AbstractController
             return new JsonResponse(['status' => 'already_processed']);
         }
 
-        $totalTtc = array_reduce(
+        $subtotalTtc = array_reduce(
             $cartItems,
             fn(float $carry, $item) => $carry + ($item->getQuantity() * (float) $item->getUnitPrice()),
             0.0
         );
-        $totalHt = round($totalTtc / 1.2, 2);
+
+        $discountTtc = 0.0;
+        $totalPaidTtc = $subtotalTtc;
+        $totalHt = round($totalPaidTtc / 1.2, 2);
 
         $order = new Order();
         $order->setUser($user);
-        $order->setTotalHt((string) $totalHt);
-        $order->setTotalTtc((string) $totalTtc);
+        $order->setSubtotalTtc(number_format($subtotalTtc, 2, '.', ''));
+        $order->setDiscountTtc(number_format($discountTtc, 2, '.', ''));
+        $order->setTotalHt(number_format($totalHt, 2, '.', ''));
+        $order->setTotalTtc(number_format($totalPaidTtc, 2, '.', ''));
+        $order->setPromoCode(null);
+        $order->setStripePromotionCodeId(null);
+        $order->setStripeCouponId(null);
+        $order->setCurrency($intent->currency ?? 'eur');
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        // Récupère le stripeSubscriptionId
         $invoiceId = $intent->invoice ?? null;
         if ($invoiceId) {
-            // Flux Vue.js — PaymentIntent lié à une invoice Stripe
             $invoice = $this->stripe->invoices->retrieve((string) $invoiceId);
             if ($invoice->subscription) {
                 $order->setStripeSubscriptionId((string) $invoice->subscription);
             }
         } elseif (!empty($intent->metadata['sub_id'])) {
-            // Flux Mobile — PaymentIntent créé manuellement, sub_id dans les metadata
             $order->setStripeSubscriptionId($intent->metadata['sub_id']);
         }
 
@@ -94,10 +100,9 @@ class PaymentConfirmController extends AbstractController
                 $orderItem->setQuantity($cartItem->getQuantity());
                 $orderItem->setPrice($cartItem->getUnitPrice());
                 $orderItem->setProductPlan($cartItem->getProductPlan());
-                
-                // Capture snapshots
+
                 $orderItem->setProductName($product->getName());
-                
+
                 $productSnapshot = [
                     'id' => $product->getId(),
                     'name' => $product->getName(),
@@ -107,7 +112,7 @@ class PaymentConfirmController extends AbstractController
                     'disponibilite' => $product->getDisponibilite()?->name,
                 ];
                 $orderItem->setProductSnapshot($productSnapshot);
-                
+
                 $productPlan = $cartItem->getProductPlan();
                 if ($productPlan) {
                     $productPlanSnapshot = [
@@ -120,7 +125,7 @@ class PaymentConfirmController extends AbstractController
                     ];
                     $orderItem->setProductPlanSnapshot($productPlanSnapshot);
                 }
-                
+
                 $order->addOrderItem($orderItem);
                 $this->em->persist($orderItem);
 

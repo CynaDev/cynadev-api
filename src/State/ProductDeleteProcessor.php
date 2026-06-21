@@ -26,7 +26,7 @@ final class ProductDeleteProcessor implements ProcessorInterface
     }
 
     if ($data->getStripeProductId()) {
-        $this->logger->info('Archiving Stripe product before local delete', [
+        $this->logger->info('Archivage du produit', [
             'local_product_id' => $data->getId(),
             'stripe_product_id' => $data->getStripeProductId(),
         ]);
@@ -34,7 +34,7 @@ final class ProductDeleteProcessor implements ProcessorInterface
         try {
             $this->stripeProductService->archiveProduct($data->getStripeProductId());
         } catch (\Throwable $e) {
-            $this->logger->error('Failed to archive Stripe product before local delete', [
+            $this->logger->error('Erreur durant archivage', [
                 'local_product_id' => $data->getId(),
                 'stripe_product_id' => $data->getStripeProductId(),
                 'error' => $e->getMessage(),

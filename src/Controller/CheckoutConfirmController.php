@@ -33,11 +33,12 @@ class CheckoutConfirmController extends AbstractController
     public function __invoke(string $sessionId): JsonResponse
     {
         $session = $this->stripe->checkout->sessions->retrieve($sessionId, [
-            'expand' => ['subscription'], // ← AJOUTE pour récupérer la subscription
+            'expand' => [
+                'subscription',
+                'total_details.breakdown.discounts',
+            ],
         ]);
 
-        // ← Pour subscription, le statut est 'unpaid' au moment du confirm
-        // On vérifie différemment selon le mode
         if ($session->mode === 'subscription') {
             if ($session->status !== 'complete') {
                 return new JsonResponse(['error' => 'Session non complétée.'], 400);
@@ -68,46 +69,87 @@ class CheckoutConfirmController extends AbstractController
             return new JsonResponse(['status' => 'already_processed']);
         }
 
-        // ← Sauvegarder le stripeCustomerId sur l'utilisateur
         if ($session->customer && !$user->getStripeCustomerId()) {
             $user->setStripeCustomerId($session->customer);
         }
 
-        $totalTtc = array_reduce(
+        $subtotalTtc = array_reduce(
             $cartItems,
-            fn(float $carry, $item) =>
-            $carry + ($item->getQuantity() * (float) $item->getUnitPrice()),
+            fn(float $carry, $item) => $carry + ($item->getQuantity() * (float) $item->getUnitPrice()),
             0.0
         );
-        $totalHt = round($totalTtc / 1.2, 2);
+
+        $discountTtc = (float) (($session->total_details->amount_discount ?? 0) / 100);
+        $totalPaidTtc = max(0, $subtotalTtc - $discountTtc);
+        $totalHt = round($totalPaidTtc / 1.2, 2);
+
+        $promoCode = null;
+        $stripePromotionCodeId = null;
+        $stripeCouponId = null;
+
+        $discounts = $session->total_details->breakdown->discounts ?? [];
+        if (!empty($discounts)) {
+            $firstDiscount = $discounts[0] ?? null;
+
+            if ($firstDiscount && isset($firstDiscount->discount)) {
+                $discountObject = $firstDiscount->discount;
+
+                if (isset($discountObject->promotion_code)) {
+                    if (is_string($discountObject->promotion_code)) {
+                        $stripePromotionCodeId = $discountObject->promotion_code;
+                    } elseif (is_object($discountObject->promotion_code)) {
+                        $stripePromotionCodeId = $discountObject->promotion_code->id ?? null;
+                        $promoCode = $discountObject->promotion_code->code ?? null;
+                    }
+                }
+
+                if (isset($discountObject->coupon)) {
+                    if (is_string($discountObject->coupon)) {
+                        $stripeCouponId = $discountObject->coupon;
+                    } elseif (is_object($discountObject->coupon)) {
+                        $stripeCouponId = $discountObject->coupon->id ?? null;
+                    }
+                }
+            }
+        }
+
+        if (!$promoCode && isset($session->metadata->promo_code_input) && $session->metadata->promo_code_input !== '') {
+            $promoCode = $session->metadata->promo_code_input;
+        }
 
         $order = new Order();
         $order->setUser($user);
-        $order->setTotalHt((string) $totalHt);
-        $order->setTotalTtc((string) $totalTtc);
+        $order->setSubtotalTtc(number_format($subtotalTtc, 2, '.', ''));
+        $order->setDiscountTtc(number_format($discountTtc, 2, '.', ''));
+        $order->setTotalTtc(number_format($totalPaidTtc, 2, '.', ''));
+        $order->setTotalHt(number_format($totalHt, 2, '.', ''));
+        $order->setPromoCode($promoCode);
+        $order->setStripePromotionCodeId($stripePromotionCodeId);
+        $order->setStripeCouponId($stripeCouponId);
+        $order->setCurrency($session->currency ?? 'eur');
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        // ← Sauvegarder la subscription_id si mode subscription
         if ($session->mode === 'subscription' && $session->subscription) {
             $subId = is_string($session->subscription)
                 ? $session->subscription
                 : $session->subscription->id;
+
             $order->setStripeSubscriptionId($subId);
         }
 
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
+
             if ($product) {
                 $orderItem = new OrderItem();
                 $orderItem->setProduct($product);
                 $orderItem->setQuantity($cartItem->getQuantity());
                 $orderItem->setPrice($cartItem->getUnitPrice());
                 $orderItem->setProductPlan($cartItem->getProductPlan());
-                
-                // Capture snapshots
+
                 $orderItem->setProductName($product->getName());
-                
+
                 $productSnapshot = [
                     'id' => $product->getId(),
                     'name' => $product->getName(),
@@ -117,7 +159,7 @@ class CheckoutConfirmController extends AbstractController
                     'disponibilite' => $product->getDisponibilite()?->name,
                 ];
                 $orderItem->setProductSnapshot($productSnapshot);
-                
+
                 $productPlan = $cartItem->getProductPlan();
                 if ($productPlan) {
                     $productPlanSnapshot = [
@@ -130,7 +172,7 @@ class CheckoutConfirmController extends AbstractController
                     ];
                     $orderItem->setProductPlanSnapshot($productPlanSnapshot);
                 }
-                
+
                 $order->addOrderItem($orderItem);
                 $this->em->persist($orderItem);
 
@@ -144,7 +186,6 @@ class CheckoutConfirmController extends AbstractController
 
         $this->em->persist($order);
 
-        // ← Snapshot des items AVANT de les supprimer pour l'email
         $cartItemsSnapshot = array_map(fn($item) => clone $item, $cartItems);
 
         foreach ($cartItems as $cartItem) {
@@ -153,8 +194,11 @@ class CheckoutConfirmController extends AbstractController
 
         $this->em->flush();
 
-        $this->emailService->sendOrderConfirmationEmail($user, $order, $cartItemsSnapshot); // ← snapshot
+        $this->emailService->sendOrderConfirmationEmail($user, $order, $cartItemsSnapshot);
 
-        return new JsonResponse(['status' => 'created', 'orderId' => $order->getId()]);
+        return new JsonResponse([
+            'status' => 'created',
+            'orderId' => $order->getId(),
+        ]);
     }
 }

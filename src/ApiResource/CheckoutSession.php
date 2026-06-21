@@ -20,7 +20,7 @@ class CheckoutSession
     public array $items = [];
 
     public string $successUrl = '';
-    public string $cancelUrl  = '';
+    public string $cancelUrl = '';
 
     public ?string $sessionUrl = null;
 

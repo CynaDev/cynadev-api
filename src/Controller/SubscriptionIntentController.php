@@ -16,16 +16,24 @@ class SubscriptionIntentController extends AbstractController
         private StripeClient $stripe,
         private UserRepository $userRepository,
         private EntityManagerInterface $em,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/subscription/intent', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
         $user = $this->userRepository->find((int) $data['userId']);
-        $priceId = $data['priceId'];
         $promoCode = $data['promoCode'] ?? null;
+        
+        $items = $data['items'] ?? [];
+        if (empty($items) && isset($data['priceId'])) {
+            // Rétrocompatibilité si jamais priceId est encore envoyé
+            $items = [['stripePriceId' => $data['priceId'], 'quantity' => 1]];
+        }
+
+        if (empty($items)) {
+            return new JsonResponse(['error' => 'Aucun article fourni.'], 400);
+        }
 
         $customerId = $user->getStripeCustomerId();
         if (!$customerId) {
@@ -51,13 +59,17 @@ class SubscriptionIntentController extends AbstractController
 
         $subscriptionParams = [
             'customer' => $customerId,
-            'items' => [['price' => $priceId]],
+            // ✅ Mappe chaque item du panier vers un item Stripe
+            'items' => array_map(fn($item) => [
+                'price'    => $item['stripePriceId'],
+                'quantity' => $item['quantity'] ?? 1,
+            ], $items),
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
             'metadata' => [
-                'cart_id' => $data['cartId'],
-                'user_id' => $data['userId'],
+                'cart_id' => $data['cartId'] ?? '',
+                'user_id' => $data['userId'] ?? '',
             ],
         ];
 
@@ -74,21 +86,21 @@ class SubscriptionIntentController extends AbstractController
         $invoice = $this->stripe->invoices->retrieve($invoiceId);
 
         $payIntent = $this->stripe->paymentIntents->create([
-            'amount' => $invoice->amount_due,
-            'currency' => $invoice->currency,
-            'customer' => $customerId,
+            'amount'               => $invoice->amount_due,
+            'currency'             => $invoice->currency,
+            'customer'             => $customerId,
             'payment_method_types' => ['card'],
-            'metadata' => [
+            'metadata'             => [
                 'invoice_id' => $invoiceId,
-                'sub_id' => $subscription->id,
-                'cart_id' => $data['cartId'],
-                'user_id' => $data['userId'],
+                'sub_id'     => $subscription->id,
+                'cart_id'    => $data['cartId'] ?? '',
+                'user_id'    => $data['userId'] ?? '',
             ],
             'setup_future_usage' => 'off_session',
         ]);
 
         return new JsonResponse([
-            'clientSecret' => $payIntent->client_secret,
+            'clientSecret'   => $payIntent->client_secret,
             'subscriptionId' => $subscription->id,
         ]);
     }

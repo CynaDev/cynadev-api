@@ -24,6 +24,19 @@ class OrderRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    // src/Repository/OrderRepository.php
+    public function getAverageOrderTotal(): float
+    {
+        $result = $this->createQueryBuilder('o')
+            ->select('AVG(o.totalTtc) as avg_total')
+            ->where('o.status = :status')
+            ->setParameter('status', 'Payee')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ? round((float) $result, 2) : 0.0;
+    }
+
     //    /**
     //     * @return Order[] Returns an array of Order objects
     //     */

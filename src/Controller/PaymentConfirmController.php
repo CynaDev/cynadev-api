@@ -32,16 +32,20 @@ class PaymentConfirmController extends AbstractController
     #[Route('/api/payment/confirm', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data           = json_decode($request->getContent(), true);
         $paymentIntentId = $data['paymentIntentId'] ?? null;
-        $cartId = $data['cartId'] ?? null;
-        $userId = $data['userId'] ?? null;
+        $cartId         = $data['cartId'] ?? null;
+        $userId         = $data['userId'] ?? null;
 
         if (!$paymentIntentId) {
             return new JsonResponse(['error' => 'PaymentIntent manquant.'], 400);
         }
 
-        $intent = $this->stripe->paymentIntents->retrieve($paymentIntentId);
+        // ── Récupère le PaymentIntent avec l'invoice expandée ──────────────
+        $intent = $this->stripe->paymentIntents->retrieve($paymentIntentId, [
+            'expand' => ['invoice', 'invoice.subscription'],
+        ]);
+
         if ($intent->status !== 'succeeded') {
             return new JsonResponse(['error' => 'Paiement non confirmé.'], 400);
         }
@@ -59,81 +63,129 @@ class PaymentConfirmController extends AbstractController
             return new JsonResponse(['status' => 'already_processed']);
         }
 
-        $subtotalTtc = array_reduce(
+        // ── Calcul des montants depuis Stripe (réduction incluse) ───────────
+        $subtotalTtc           = array_reduce(
             $cartItems,
             fn(float $carry, $item) => $carry + ($item->getQuantity() * (float) $item->getUnitPrice()),
             0.0
         );
+        $discountTtc           = 0.0;
+        $totalPaidTtc          = $subtotalTtc;
+        $promoCode             = null;
+        $stripePromotionCodeId = null;
+        $stripeCouponId        = null;
+        $stripeSubscriptionId  = null;
 
-        $discountTtc = 0.0;
-        $totalPaidTtc = $subtotalTtc;
+        $invoiceObject = $intent->invoice ?? null;
+
+        if ($invoiceObject) {
+            // Ré-expand l'invoice pour avoir total_details.breakdown.discounts
+            $invoiceId = is_string($invoiceObject) ? $invoiceObject : $invoiceObject->id;
+            $invoice   = $this->stripe->invoices->retrieve((string) $invoiceId, [
+                'expand' => ['total_details.breakdown.discounts'],
+            ]);
+
+            $totalPaidTtc = $invoice->amount_paid / 100;
+
+            $rawDiscount = $invoice->total_discount_amounts[0]->amount ?? 0;
+            $discountTtc = $rawDiscount / 100;
+
+
+            $discounts = $invoice->total_details->breakdown->discounts ?? [];
+            if (!empty($discounts)) {
+                $firstDiscount = $discounts[0]->discount ?? null;
+                if ($firstDiscount) {
+                    $promoCodeObj = $firstDiscount->promotion_code ?? null;
+                    if (is_object($promoCodeObj)) {
+                        $stripePromotionCodeId = $promoCodeObj->id   ?? null;
+                        $promoCode             = $promoCodeObj->code ?? null;
+                    } elseif (is_string($promoCodeObj)) {
+                        $stripePromotionCodeId = $promoCodeObj;
+                    }
+
+                    $couponObj = $firstDiscount->coupon ?? null;
+                    if (is_object($couponObj)) {
+                        $stripeCouponId = $couponObj->id ?? null;
+                    } elseif (is_string($couponObj)) {
+                        $stripeCouponId = $couponObj;
+                    }
+                }
+            }
+
+            if ($invoice->subscription) {
+                $stripeSubscriptionId = is_string($invoice->subscription)
+                    ? $invoice->subscription
+                    : $invoice->subscription->id;
+            }
+        } else {
+            // Pas d'invoice → paiement one-shot, montant depuis amount_received
+            $totalPaidTtc = $intent->amount_received / 100;
+
+            // Récupère le sub_id depuis les metadata si présent
+            if (!empty($intent->metadata['sub_id'])) {
+                $stripeSubscriptionId = $intent->metadata['sub_id'];
+            }
+        }
+
         $totalHt = round($totalPaidTtc / 1.2, 2);
 
+        // ── Création de la commande ─────────────────────────────────────────
         $order = new Order();
         $order->setUser($user);
         $order->setSubtotalTtc(number_format($subtotalTtc, 2, '.', ''));
         $order->setDiscountTtc(number_format($discountTtc, 2, '.', ''));
         $order->setTotalHt(number_format($totalHt, 2, '.', ''));
         $order->setTotalTtc(number_format($totalPaidTtc, 2, '.', ''));
-        $order->setPromoCode(null);
-        $order->setStripePromotionCodeId(null);
-        $order->setStripeCouponId(null);
+        $order->setPromoCode($promoCode);
+        $order->setStripePromotionCodeId($stripePromotionCodeId);
+        $order->setStripeCouponId($stripeCouponId);
         $order->setCurrency($intent->currency ?? 'eur');
         $order->setStatus(Statuses_enums::Payee);
         $order->setDateCommande(new \DateTime());
 
-        $invoiceId = $intent->invoice ?? null;
-        if ($invoiceId) {
-            $invoice = $this->stripe->invoices->retrieve((string) $invoiceId);
-            if ($invoice->subscription) {
-                $order->setStripeSubscriptionId((string) $invoice->subscription);
-            }
-        } elseif (!empty($intent->metadata['sub_id'])) {
-            $order->setStripeSubscriptionId($intent->metadata['sub_id']);
+        if ($stripeSubscriptionId) {
+            $order->setStripeSubscriptionId($stripeSubscriptionId);
         }
 
+        // ── Order items + snapshots ─────────────────────────────────────────
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->getProductPlan()?->getProduct();
-            if ($product) {
-                $orderItem = new OrderItem();
-                $orderItem->setProduct($product);
-                $orderItem->setQuantity($cartItem->getQuantity());
-                $orderItem->setPrice($cartItem->getUnitPrice());
-                $orderItem->setProductPlan($cartItem->getProductPlan());
+            if (!$product) continue;
 
-                $orderItem->setProductName($product->getName());
+            $orderItem = new OrderItem();
+            $orderItem->setProduct($product);
+            $orderItem->setQuantity($cartItem->getQuantity());
+            $orderItem->setPrice($cartItem->getUnitPrice());
+            $orderItem->setProductPlan($cartItem->getProductPlan());
+            $orderItem->setProductName($product->getName());
 
-                $productSnapshot = [
-                    'id' => $product->getId(),
-                    'name' => $product->getName(),
-                    'description' => $product->getDescription(),
-                    'price' => $product->getPrice(),
-                    'categoryId' => $product->getCategoryId(),
-                    'disponibilite' => $product->getDisponibilite()?->name,
-                ];
-                $orderItem->setProductSnapshot($productSnapshot);
+            $orderItem->setProductSnapshot([
+                'id'            => $product->getId(),
+                'name'          => $product->getName(),
+                'description'   => $product->getDescription(),
+                'price'         => $product->getPrice(),
+                'categoryId'    => $product->getCategoryId(),
+                'disponibilite' => $product->getDisponibilite()?->name,
+            ]);
 
-                $productPlan = $cartItem->getProductPlan();
-                if ($productPlan) {
-                    $productPlanSnapshot = [
-                        'id' => $productPlan->getId(),
-                        'name' => $productPlan->getName(),
-                        'billingCycle' => $productPlan->getBillingCycle(),
-                        'price' => $productPlan->getPrice(),
-                        'stripePriceId' => $productPlan->getStripePriceId(),
-                        'features' => $productPlan->getFeatures(),
-                    ];
-                    $orderItem->setProductPlanSnapshot($productPlanSnapshot);
-                }
+            $productPlan = $cartItem->getProductPlan();
+            if ($productPlan) {
+                $orderItem->setProductPlanSnapshot([
+                    'id'           => $productPlan->getId(),
+                    'name'         => $productPlan->getName(),
+                    'billingCycle' => $productPlan->getBillingCycle(),
+                    'price'        => $productPlan->getPrice(),
+                    'stripePriceId'=> $productPlan->getStripePriceId(),
+                    'features'     => $productPlan->getFeatures(),
+                ]);
+            }
 
-                $order->addOrderItem($orderItem);
-                $this->em->persist($orderItem);
+            $order->addOrderItem($orderItem);
+            $this->em->persist($orderItem);
 
-                $stock = $this->stockRepository->findOneBy(['product' => $product]);
-                if ($stock !== null) {
-                    $newQty = max(0, $stock->getQuantite() - $cartItem->getQuantity());
-                    $stock->setQuantite($newQty);
-                }
+            $stock = $this->stockRepository->findOneBy(['product' => $product]);
+            if ($stock !== null) {
+                $stock->setQuantite(max(0, $stock->getQuantite() - $cartItem->getQuantity()));
             }
         }
 

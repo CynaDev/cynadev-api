@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Repository\CartRepository;
 use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,17 +17,22 @@ class PaymentIntentController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
+        $promoCode = $data['promoCode'] ?? null;
+
         $intent = $this->stripe->paymentIntents->create([
-            'amount'   => (int) $data['amount'], // centimes
+            'amount' => (int) $data['amount'],
             'currency' => 'eur',
             'automatic_payment_methods' => ['enabled' => true],
             'receipt_email' => $data['customerEmail'] ?? null,
             'metadata' => [
                 'cart_id' => $data['cartId'] ?? null,
                 'user_id' => $data['userId'] ?? null,
+                'promo_code' => $promoCode ?? '',
             ],
         ]);
 
-        return new JsonResponse(['clientSecret' => $intent->client_secret]);
+        return new JsonResponse([
+            'clientSecret' => $intent->client_secret,
+        ]);
     }
 }
